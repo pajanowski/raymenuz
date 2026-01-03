@@ -1,41 +1,20 @@
 drawSettings:
   paddingY: 5
-  startX: 25
+  startX: 75
   width: 75
   height: 10
 itemDefs:
   - elementType: SLIDER
-    statePath: jumper.gravity
-    displayValuePrefix: Gravity
+    statePath: player.speed.x
+    displayValuePrefix: X Speed
     menuItemType: float
     range:
-      upper: 0
-      lower: -400
+      upper: 20
+      lower: 0
   - elementType: SLIDER
-    statePath: jumper.jumpPower
-    displayValuePrefix: Jump
+    statePath: player.speed.y
+    displayValuePrefix: Y Speed
     menuItemType: float
     range:
-      upper: 1000
+      upper: 20
       lower: 0
-  - elementType: VALUE_BOX
-    statePath: jumper.xSpeed
-    displayValuePrefix: X Speed
-    menuItemType: int
-    range:
-      upper: 1000
-      lower: 0
-  - elementType: LABEL
-    statePath: jumper.vel.y
-    displayValuePrefix: Vel Y
-    menuItemType: float
-    range:
-      upper: -1
-      lower: -1
-  - elementType: LABEL
-    statePath: jumper.xSpeed
-    displayValuePrefix: X Speed
-    menuItemType: int
-    range:
-      upper: -1
-      lower: -1
