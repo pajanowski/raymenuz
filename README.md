@@ -6,6 +6,34 @@
 - Semi-automatic element positioning
 - Yaml defined menus
  - - -
+### Installation
+raymenuz requires 3 libraries
+- raylib-zig https://github.com/raylib-zig/raylib-zig
+- raygui (included in raylib-zig)
+- ymlz https://github.com/pwbh/ymlz
+
+Install with 
+`zig fetch --save git+https://github.com/pajanowski/raymenuz.git#HEAD`
+
+In your `build.zig`
+```zig
+    const raymenuz = b.dependency("raymenuz", .{});
+    const ymlz = b.dependency("ymlz", .{});
+
+    const mod = b.addModule("", .{
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+    });
+
+    const raymenuz_mod = raymenuz.module("raymenuz");
+    raymenuz_mod.addImport("raylib", raylib);
+    raymenuz_mod.addImport("raygui", raygui);
+    raymenuz_mod.addImport("ymlz", ymlz.module("root"));
+
+
+    mod.addImport("raymenuz", raymenuz_mod);
+```
+- - - 
 ### Usage
 ```zig
 const RayMenu = @import("raymenuz").RayMenu;
@@ -33,6 +61,7 @@ pub fn main() !void {
     );
 
     while (!rl.windowShouldClose()) { 
+        // Update your application
         rl.beginDrawing();
         defer rl.endDrawing();
 
@@ -55,28 +84,14 @@ pub fn main() !void {
 
 ```yaml
 drawSettings:
-  
   paddingY: 5
-  
   startX: 25
-  
-  # width of elements
   width: 75
-  
-  # height of elements
   height: 10
 itemDefs:
-  -
-    # 
-    elementType: SLIDER
-    
-    # 
+  - elementType: SLIDER
     statePath: player.gravity
-    
-    #
     displayValuePrefix: Gravity
-    
-    #
     menuItemType: float
     range:
       upper: 0
@@ -96,6 +111,7 @@ itemDefs:
       upper: -1
       lower: -1
 ```
+There is also a working example in [src/main.zig](src/main.zig).
 
 - - - 
 ### Menu Definition
@@ -127,31 +143,54 @@ While only used for number-based elements, it is still required for all elements
 
 ### raygui elements
 
-| Element          | Status              | Supported Types |
-|:-----------------|:--------------------|:----------------|
-| **Slider**       | Supported           | `float`         |
-| **ValueBox**     | Supported           | `int`           |
-| **Label**        | Partially Supported | `int`, `float`  |
-| **Button**       | Planned             | -               |
-| **TextBox**      | Planned             | -               |
-| **SliderBar**    | Planned             | -               |
-| **ProgressBar**  | Planned             | -               |
-| **StatusBar**    | Planned             | -               |
-| **CheckBox**     | Planned             | -               |
-| **LabelButton**  | Planned             | -               |
-| **Toggle**       | Needs Consideration | -               |
-| **ToggleGroup**  | Needs Consideration | -               |
-| **ToggleSlider** | Needs Consideration | -               |
-| **ComboBox**     | Needs Consideration | -               |
-| **DropdownBox**  | Needs Consideration | -               |
-| **Spinner**      | Needs Consideration | -               |
-| **DummyRec**     | Needs Consideration | -               |
-| **Grid**         | Needs Consideration | -               |
+| Element          | Status              | elementType | Supported menuItemType |
+|:-----------------|:--------------------|-------------|:-----------------------|
+| **Slider**       | Supported           | `SLIDER`    | `float`                |
+| **ValueBox**     | Supported           | `VALUE_BOX` | `int`                  |
+| **Label**        | Partially Supported | `LABEL`     | `int`                  |
+| **Button**       | Planned             |             | -                      |
+| **TextBox**      | Planned             |             | -                      |
+| **SliderBar**    | Planned             |             | -                      |
+| **ProgressBar**  | Planned             |             | -                      |
+| **StatusBar**    | Planned             |             | -                      |
+| **CheckBox**     | Planned             |             | -                      |
+| **LabelButton**  | Planned             |             | -                      |
+| **Toggle**       | Needs Consideration |             | -                      |
+| **ToggleGroup**  | Needs Consideration |             | -                      |
+| **ToggleSlider** | Needs Consideration |             | -                      |
+| **ComboBox**     | Needs Consideration |             | -                      |
+| **DropdownBox**  | Needs Consideration |             | -                      |
+| **Spinner**      | Needs Consideration |             | -                      |
+| **DummyRec**     | Needs Consideration |             | -                      |
+| **Grid**         | Needs Consideration |             | -                      |
  - - -
 ### Known Errors
-TODO
+Error handling improvements will be made for errors that happen outside of this library, better error handling, more specific log messages, etc.
+
+### Menu Items Not Appearing Errors
+* 'error: State path X not found or not parseable to Y(type)'
+  * Either the statePath set for the non-appearing menu item is not at the path for the provided state struct,
+  or it does exist and the type is mismatched, e.g., the field the statePath is pointing to might be a `[]const u8` but the
+  value type is an `int`.
+
+### Black Screen Errors
+* 'panic: start index X is larger than end index 0'
+  * You probably have a blank line in your yaml file. This has been fixed in ymlz but isn't in a release yet.
+
+* 'panic: attempt to use null value'
+  * Your elementType might not be available for the type you've specified.
+  * You are probably missing a value in the struct. Remember that all values are required in the menu yaml definition.
+
+- - - 
+### Contributing
+Please create an issue before putting up a pull request.
+
+This libary is also fairly small and adding new elementTypes for the existing menuItemTypes should be fairly straight forward, and maybe qualify as a good first issue.
+1. Add a `draw(rayguiElement)` in RayMenu
+2. Add the new element type to the UiElementType enum in `raymenuutils.zig`
+3. Add a corresponding branch to `draw(menuItemType)Elements`
 - - -
-### Motivation
+- ### Motivation
 I wanted a developer menu, DearImgUi, microui, etc., for every raylib project I started, but I always found it difficult
 to get them working when using languages other than C.
 
@@ -162,8 +201,4 @@ before, but it still required recompiling to add a label to watch a value I need
 raymenuz is my solution to my problem. I hope that others find it useful.
 
 - - - 
-### Contributing
-Please create an issue before putting up a pull request. I'm open to new features.
-This is my first real Zig project, and I am open to suggestions on how
-to improve the project structure, code structure, etc.
 
