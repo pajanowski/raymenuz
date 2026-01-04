@@ -74,10 +74,11 @@ pub fn RayMenu(comptime T: type) type {
                         drawFloatElements(menuItem, active.valuePtr);
                     },
                     .int => |active| {
-                        // std.log.info("int menu item {s}\n", .{menuItem.int.menuProperties.displayValuePrefix});
                         drawIntElements(menuItem, active.valuePtr);
                     },
-                    .string => std.log.warn("String not implemented yet", .{}),
+                    .string => |active| {
+                        drawStringElements(menuItem, active.valuePtr);
+                    },
                 }
             }
         }
@@ -90,7 +91,7 @@ pub fn RayMenu(comptime T: type) type {
                     drawSlideBar(menuProperties, range, valuePtr);
                 },
                 .LABEL => {
-                    drawLabel(menuProperties, valuePtr);
+                    drawNumberLabel(menuProperties, valuePtr);
                 },
                 else => {}
             }
@@ -105,33 +106,58 @@ pub fn RayMenu(comptime T: type) type {
                         drawValueBox(menuProperties, range, valuePtr);
                     },
                     .LABEL => {
-                        drawLabel(menuProperties, valuePtr);
+                        drawNumberLabel(menuProperties, valuePtr);
                     },
                     else => {}
                 }
             }
         }
 
-        fn formatLabel(buf: []u8, prefix: []const u8, value: anytype) [:0]const u8 {
+        fn drawStringElements(menuItem: *mi.MenuItem, valuePtr: *[]const u8) void {
+            const menuProperties = menuItem.getMenuProperties();
+            if (menuProperties.elementType) |elementType| {
+                switch(elementType) {
+                    .LABEL => {
+                        drawStringLabel(menuProperties, valuePtr);
+                    },
+                    else => {}
+                }
+            }
+        }
+
+        fn formatNumberLabel(buf: []u8, prefix: []const u8, value: anytype) [:0]const u8 {
             if (prefix.len == 0) return "";
             return std.fmt.bufPrintZ(buf, "{s}: {d:.1}", .{ prefix, value }) catch "Gravity";
         }
 
+        fn formatLabel(buf: []u8, prefix: []const u8, value: anytype) [:0]const u8 {
+            if (prefix.len == 0) return "";
+            return std.fmt.bufPrintZ(buf, "{s}", .{ prefix, value }) catch "Gravity";
+        }
+
         fn drawSlideBar(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: anytype) void {
             var label_buf: [64]u8 = undefined;
-            const text = formatLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
+            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
             _ = rg.sliderBar(menuProperties.bounds, text, "", valuePtr, range.lower, range.upper);
         }
 
         fn drawValueBox(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: *i32) void {
             var label_buf: [64]u8 = undefined;
-            const text = formatLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
+            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
             _ = rg.valueBox(menuProperties.bounds, text, valuePtr, @intFromFloat(range.lower), @intFromFloat(range.upper), true);
         }
 
-        fn drawLabel(menuProperties: mi.MenuProperties, valuePtr: anytype) void {
+        fn drawStringLabel(menuProperties: mi.MenuProperties, valuePtr: *[]const u8) void {
             var label_buf: [64]u8 = undefined;
-            const text = formatLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
+            const prefix = menuProperties.displayValuePrefix;
+            const text = std.fmt.bufPrintZ(&label_buf, "{s} {s}", .{ prefix, valuePtr.* }) catch "Gravity";
+            _ = rg.label(menuProperties.bounds, text);
+        }
+
+
+        fn drawNumberLabel(menuProperties: mi.MenuProperties, valuePtr: anytype) void {
+            var label_buf: [64]u8 = undefined;
+            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
             _ = rg.label(menuProperties.bounds, text);
         }
 

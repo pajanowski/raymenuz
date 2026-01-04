@@ -18,3 +18,10 @@ itemDefs:
     range:
       upper: 20
       lower: 0
+  - elementType: LABEL
+    statePath: player.name
+    displayValuePrefix: Name
+    menuItemType: string
+    range:
+      upper: 20
+      lower: 0

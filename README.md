@@ -7,6 +7,8 @@
 - Yaml defined menus
  - - -
 ### Installation
+These directions assume that you already have a working raylib project.
+
 raymenuz requires 3 libraries
 - raylib-zig https://github.com/raylib-zig/raylib-zig
 - raygui (included in raylib-zig)
@@ -32,6 +34,8 @@ In your `build.zig`
 
 
     mod.addImport("raymenuz", raymenuz_mod);
+
+    exe.root_module.addImport("raymenuz", raymenuz_mod);
 ```
 - - - 
 ### Usage
@@ -143,26 +147,26 @@ While only used for number-based elements, it is still required for all elements
 
 ### raygui elements
 
-| Element          | Status              | elementType | Supported menuItemType |
-|:-----------------|:--------------------|-------------|:-----------------------|
-| **Slider**       | Supported           | `SLIDER`    | `float`                |
-| **ValueBox**     | Supported           | `VALUE_BOX` | `int`                  |
-| **Label**        | Partially Supported | `LABEL`     | `int`                  |
-| **Button**       | Planned             |             | -                      |
-| **TextBox**      | Planned             |             | -                      |
-| **SliderBar**    | Planned             |             | -                      |
-| **ProgressBar**  | Planned             |             | -                      |
-| **StatusBar**    | Planned             |             | -                      |
-| **CheckBox**     | Planned             |             | -                      |
-| **LabelButton**  | Planned             |             | -                      |
-| **Toggle**       | Needs Consideration |             | -                      |
-| **ToggleGroup**  | Needs Consideration |             | -                      |
-| **ToggleSlider** | Needs Consideration |             | -                      |
-| **ComboBox**     | Needs Consideration |             | -                      |
-| **DropdownBox**  | Needs Consideration |             | -                      |
-| **Spinner**      | Needs Consideration |             | -                      |
-| **DummyRec**     | Needs Consideration |             | -                      |
-| **Grid**         | Needs Consideration |             | -                      |
+| Element          | Status              | elementType | Supported menuItemType   |
+|:-----------------|:--------------------|-------------|:-------------------------|
+| **Slider**       | Supported           | `SLIDER`    | `float`                  |
+| **ValueBox**     | Supported           | `VALUE_BOX` | `int`                    |
+| **Label**        | Supported | `LABEL`     | `int`, `float`, `string` |
+| **Button**       | Planned             |             | -                        |
+| **TextBox**      | Planned             |             | -                        |
+| **SliderBar**    | Planned             |             | -                        |
+| **ProgressBar**  | Planned             |             | -                        |
+| **StatusBar**    | Planned             |             | -                        |
+| **CheckBox**     | Planned             |             | -                        |
+| **LabelButton**  | Planned             |             | -                        |
+| **Toggle**       | Needs Consideration |             | -                        |
+| **ToggleGroup**  | Needs Consideration |             | -                        |
+| **ToggleSlider** | Needs Consideration |             | -                        |
+| **ComboBox**     | Needs Consideration |             | -                        |
+| **DropdownBox**  | Needs Consideration |             | -                        |
+| **Spinner**      | Needs Consideration |             | -                        |
+| **DummyRec**     | Needs Consideration |             | -                        |
+| **Grid**         | Needs Consideration |             | -                        |
  - - -
 ### Known Errors
 Error handling improvements will be made for errors that happen outside of this library, better error handling, more specific log messages, etc.

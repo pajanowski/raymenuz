@@ -7,13 +7,16 @@ const rg = @import("raygui");
 const Player = struct {
     rec: rl.Rectangle,
     speed: rl.Vector2,
+    name: []const u8,
 
     const Self = @This();
 
     pub fn init(
-        startingPos: rl.Vector2
+    name: []const u8,
+    startingPos: rl.Vector2
     ) Self {
         return Self{
+            .name = name,
             .rec = rl.Rectangle{
                 .height = 10,
                 .width = 10,
@@ -43,6 +46,7 @@ pub fn main() !void {
     rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
 
     var player = Player.init(
+        "ray",
         rl.Vector2{.x = screen_width / 2, .y = screen_height / 2}
     );
     var state = State{.player = &player};
