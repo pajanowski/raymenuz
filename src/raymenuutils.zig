@@ -17,11 +17,11 @@ pub const UiElementError = error {
 };
 
 pub const YamlItemDef = struct{
+    name: []const u8,
     menuItemType: []const u8,
     statePath: []const u8,
     elementType: []const u8,
     range: Range,
-    displayValuePrefix: []const u8,
 };
 
 pub const DrawSettings = struct {
@@ -29,6 +29,8 @@ pub const DrawSettings = struct {
     width: f32,
     height: f32,
     paddingY: f32,
+    nameHeight: f32,
+    namePadding: f32,
 };
 
 pub const YamlMenuDef = struct {
@@ -37,11 +39,11 @@ pub const YamlMenuDef = struct {
 };
 
 pub const ItemDef = struct {
+    name: []const u8,
     menuItemType: []const u8,
     statePath: []const u8,
     elementType: []const u8,
     bounds: Rectangle,
-    displayValuePrefix: []const u8,
     range: Range,
 };
 
@@ -73,23 +75,31 @@ pub const Range = struct {
 };
 
 pub const MenuProperties = struct {
+    name: []const u8,
     elementType: ?UiElementType,
     bounds: Rectangle, // Not implemented
+    nameBounds: Rectangle, // for name label if applicable
     statePath: []const u8, // NotImplemented
-    displayValuePrefix: []const u8,
     const Self = @This();
 
     pub fn init(
+        name: []const u8,
         elementType: UiElementType,
         bounds: Rectangle,
-        displayValuePrefix: []const u8,
+        nameBounds: Rectangle,
         statePath: []const u8,
     ) Self {
-        return MenuProperties{ .elementType = elementType, .bounds = bounds, .displayValuePrefix = displayValuePrefix, .statePath = statePath };
+        return MenuProperties{
+            .name = name,
+            .elementType = elementType,
+            .bounds = bounds,
+            .nameBounds = nameBounds,
+            .statePath = statePath
+        };
     }
 
     pub fn deinit(self: Self, allocator: std.mem.Allocator) void {
-        allocator.free(self.displayValuePrefix);
+        allocator.free(self.name);
         allocator.free(self.statePath);
     }
 };
@@ -100,11 +110,20 @@ pub const IntMenuItem = struct {
     range: Range,
 
     const Self = @This();
-    pub fn init(elementType: UiElementType, valuePtr: *i32, bounds: Rectangle, displayValuePrefix: []const u8, statePath: []const u8, range: Range) Self {
+    pub fn init(
+        name: []const u8,
+        elementType: UiElementType,
+        valuePtr: *i32,
+        bounds: Rectangle,
+        nameBounds: Rectangle,
+        displayValuePrefix: []const u8,
+        statePath: []const u8,
+        range: Range
+    ) Self {
         return IntMenuItem{
             .valuePtr = valuePtr,
             .range = range,
-            .menuProperties = MenuProperties.init(elementType, bounds, displayValuePrefix, statePath),
+            .menuProperties = MenuProperties.init(name, elementType, bounds, nameBounds, displayValuePrefix, statePath),
         };
     }
 
@@ -120,11 +139,20 @@ pub const FloatMenuItem = struct {
     range: Range,
 
     const Self = @This();
-    pub fn init(elementType: UiElementType, valuePtr: *f32, bounds: Rectangle, displayValuePrefix: []const u8, statePath: []const u8, range: Range) Self {
+    pub fn init(
+        name: []const u8,
+        elementType: UiElementType,
+        valuePtr: *f32,
+        bounds: Rectangle,
+        nameBounds: Rectangle,
+        displayValuePrefix: []const u8,
+        statePath: []const u8,
+        range: Range
+    ) Self {
         return FloatMenuItem{
             .valuePtr = valuePtr,
             .range = range,
-            .menuProperties = MenuProperties.init(elementType, bounds, displayValuePrefix, statePath),
+            .menuProperties = MenuProperties.init(name, elementType, bounds, nameBounds, displayValuePrefix, statePath),
         };
     }
 
@@ -139,10 +167,18 @@ pub const StringMenuItem = struct {
     menuProperties: MenuProperties,
 
     const Self = @This();
-    pub fn init(elementType: UiElementType, valuePtr: *[]const u8, bounds: Rectangle, displayValuePrefix: []const u8, statePath: []const u8) Self {
+    pub fn init(
+        name: []const u8,
+        elementType: UiElementType,
+        valuePtr: *[]const u8,
+        bounds: Rectangle,
+        nameBounds: Rectangle,
+        displayValuePrefix: []const u8,
+        statePath: []const u8
+    ) Self {
         return StringMenuItem{
             .valuePtr = valuePtr,
-            .menuProperties = MenuProperties.init(elementType, bounds, displayValuePrefix, statePath),
+            .menuProperties = MenuProperties.init(name, elementType, bounds, nameBounds, displayValuePrefix, statePath),
         };
     }
 
@@ -210,7 +246,7 @@ pub const MenuDef = struct {
             allocator.free(itemDef.menuItemType);
             allocator.free(itemDef.statePath);
             allocator.free(itemDef.elementType);
-            allocator.free(itemDef.displayValuePrefix);
+            allocator.free(itemDef.name);
             allocator.destroy(itemDef);
         }
         allocator.free(self.itemDefs);

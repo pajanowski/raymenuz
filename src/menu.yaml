@@ -1,26 +1,28 @@
 drawSettings:
   paddingY: 5
-  startX: 75
+  startX: 5
   width: 75
   height: 10
+  nameHeight: 10
+  namePadding: 0
 itemDefs:
   - elementType: SLIDER
     statePath: player.speed.x
-    displayValuePrefix: X Speed
+    name: X Speed
     menuItemType: float
     range:
       upper: 20
       lower: 0
   - elementType: SLIDER
     statePath: player.speed.y
-    displayValuePrefix: Y Speed
+    name: Y Speed
     menuItemType: float
     range:
       upper: 20
       lower: 0
   - elementType: LABEL
     statePath: player.name
-    displayValuePrefix: Name
+    name: Name
     menuItemType: string
     range:
       upper: 20

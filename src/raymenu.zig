@@ -125,39 +125,36 @@ pub fn RayMenu(comptime T: type) type {
             }
         }
 
-        fn formatNumberLabel(buf: []u8, prefix: []const u8, value: anytype) [:0]const u8 {
-            if (prefix.len == 0) return "";
-            return std.fmt.bufPrintZ(buf, "{s}: {d:.1}", .{ prefix, value }) catch "Gravity";
-        }
-
-        fn formatLabel(buf: []u8, prefix: []const u8, value: anytype) [:0]const u8 {
-            if (prefix.len == 0) return "";
-            return std.fmt.bufPrintZ(buf, "{s}", .{ prefix, value }) catch "Gravity";
+        fn formatNumberLabel(buf: []u8, value: anytype) [:0]const u8 {
+            return std.fmt.bufPrintZ(buf, "{d:.5}", .{ value }) catch "0";
         }
 
         fn drawSlideBar(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: anytype) void {
-            var label_buf: [64]u8 = undefined;
-            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
-            _ = rg.sliderBar(menuProperties.bounds, text, "", valuePtr, range.lower, range.upper);
+            var textLabelBuf: [64]u8 = undefined;
+            const text = formatNumberLabel(&textLabelBuf, valuePtr.*);
+            var nameLabelBuf: [64]u8 = undefined;
+            const name = std.fmt.bufPrintZ(&nameLabelBuf, "{s}", .{ menuProperties.name }) catch "";
+            _ = rg.label(menuProperties.nameBounds, name);
+            _ = rg.sliderBar(menuProperties.bounds, "",text, valuePtr, range.lower, range.upper);
         }
 
         fn drawValueBox(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: *i32) void {
             var label_buf: [64]u8 = undefined;
-            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
-            _ = rg.valueBox(menuProperties.bounds, text, valuePtr, @intFromFloat(range.lower), @intFromFloat(range.upper), true);
+            const name = std.fmt.bufPrintZ(&label_buf, "{s}", .{ menuProperties.name }) catch "";
+            _ = rg.label(menuProperties.nameBounds, name);
+            _ = rg.valueBox(menuProperties.bounds, "", valuePtr, @intFromFloat(range.lower), @intFromFloat(range.upper), true);
         }
 
         fn drawStringLabel(menuProperties: mi.MenuProperties, valuePtr: *[]const u8) void {
             var label_buf: [64]u8 = undefined;
-            const prefix = menuProperties.displayValuePrefix;
-            const text = std.fmt.bufPrintZ(&label_buf, "{s} {s}", .{ prefix, valuePtr.* }) catch "Gravity";
+            const prefix = menuProperties.name;
+            const text = std.fmt.bufPrintZ(&label_buf, "{s} {s}", .{ prefix, valuePtr.* }) catch "";
             _ = rg.label(menuProperties.bounds, text);
         }
 
-
         fn drawNumberLabel(menuProperties: mi.MenuProperties, valuePtr: anytype) void {
             var label_buf: [64]u8 = undefined;
-            const text = formatNumberLabel(&label_buf, menuProperties.displayValuePrefix, valuePtr.*);
+            const text = formatNumberLabel(&label_buf, valuePtr.*);
             _ = rg.label(menuProperties.bounds, text);
         }
 
@@ -171,6 +168,7 @@ pub fn RayMenu(comptime T: type) type {
         fn getMenuItem(
             itemDef: mi.YamlItemDef,
             bounds: Rectangle,
+            nameBounds: Rectangle,
             state: *T,
             allocator: std.mem.Allocator
         ) !*MenuItem {
@@ -188,10 +186,11 @@ pub fn RayMenu(comptime T: type) type {
                 .int => {
                     ret.* = .{ .int = try allocator.create(IntMenuItem) };
                     ret.int.*.menuProperties.bounds = bounds;
+                    ret.int.*.menuProperties.nameBounds = nameBounds;
                     ret.int.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
                     // ret.int.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.int, itemDefPtr.elementType);
-                ret.int.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.int.*.menuProperties.displayValuePrefix = try allocator.dupe(u8, itemDef.displayValuePrefix);
+                    ret.int.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
+                    ret.int.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
                     ret.int.*.range = itemDef.range;
                     if(fieldPtrByPathExpect(i32, state, statePath)) |valuePtr| {
                         ret.int.*.valuePtr = valuePtr;
@@ -203,10 +202,11 @@ pub fn RayMenu(comptime T: type) type {
                 .float => {
                     ret.* = .{ .float = try allocator.create(FloatMenuItem) };
                     ret.float.*.menuProperties.bounds = bounds;
+                    ret.float.*.menuProperties.nameBounds = nameBounds;
                     ret.float.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
                     // ret.float.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.float, itemDefPtr.elementType);
-                ret.float.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.float.*.menuProperties.displayValuePrefix = try allocator.dupe(u8, itemDef.displayValuePrefix);
+                    ret.float.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
+                    ret.float.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
                     ret.float.*.range = itemDef.range;
                     if(fieldPtrByPathExpect(f32, state, statePath)) |valuePtr| {
                         ret.float.*.valuePtr = valuePtr;
@@ -218,10 +218,11 @@ pub fn RayMenu(comptime T: type) type {
                 .string => {
                     ret.* = .{ .string = try allocator.create(StringMenuItem) };
                     ret.string.*.menuProperties.bounds = bounds;
+                    ret.string.*.menuProperties.nameBounds = nameBounds;
                     ret.string.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
                     // ret.string.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.string, itemDefPtr.elementType);
-                ret.string.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.string.*.menuProperties.displayValuePrefix = try allocator.dupe(u8, itemDef.displayValuePrefix);
+                    ret.string.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
+                    ret.string.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
                     if(fieldPtrByPathExpect([]const u8, state, statePath)) |valuePtr| {
                         ret.string.*.valuePtr = valuePtr;
                     } else {
@@ -244,9 +245,21 @@ pub fn RayMenu(comptime T: type) type {
             var menuError: ?anyerror = undefined;
             const itemDefs = menuDef.itemDefs;
             for (itemDefs) |itemDef| {
+                var nameBounds = Rectangle{.height = 0, .width = 0, .x = 0, .y = 0};
+                if (!std.mem.eql(u8, itemDef.elementType, "LABEL")) {
+                    nameBounds = Rectangle{ .width = drawSettings.width, .height = drawSettings.height, .x = drawSettings.startX, .y = y };
+                    y = y + drawSettings.nameHeight + drawSettings.namePadding;
+                }
+                const elementBounds = Rectangle{
+                .width = drawSettings.width,
+                .height = drawSettings.height,
+                .x = drawSettings.startX,
+                .y = y
+                };
                 if(getMenuItem(
                     itemDef,
-                    Rectangle{ .width = drawSettings.width, .height = drawSettings.height, .x = drawSettings.startX, .y = y },
+                    elementBounds,
+                    nameBounds,
                     state,
                     allocator
                 )) |menuItem| {
@@ -374,7 +387,7 @@ test "Get IntMenuItem and access field" {
         .statePath = @constCast("player.score"),
         .elementType = @constCast("SLIDER"),
         .bounds = Rectangle{ .height = 0, .width = 1, .x = 2, .y = 3 },
-        .displayValuePrefix = @constCast("Score"),
+        .name = @constCast("Score"),
         .range = .{ .lower = 0, .upper = 100 },
     };
 
