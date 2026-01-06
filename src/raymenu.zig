@@ -183,53 +183,36 @@ pub fn RayMenu(comptime T: type) type {
 
             const ret = try allocator.create(MenuItem);
             switch (menuItemType.?) {
-                .int => {
-                    ret.* = .{ .int = try allocator.create(IntMenuItem) };
-                    ret.int.*.menuProperties.bounds = bounds;
-                    ret.int.*.menuProperties.nameBounds = nameBounds;
-                    ret.int.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
-                    // ret.int.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.int, itemDefPtr.elementType);
-                    ret.int.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.int.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
-                    ret.int.*.range = itemDef.range;
-                    if(fieldPtrByPathExpect(i32, state, statePath)) |valuePtr| {
-                        ret.int.*.valuePtr = valuePtr;
+                inline .int, .float, .string => |tag| {
+                    const itemType = switch (tag) {
+                        .int => IntMenuItem,
+                        .float => FloatMenuItem,
+                        .string => StringMenuItem
+                    };
+                    const item = try allocator.create(itemType);
+                    ret.* = @unionInit(MenuItem, @tagName(tag), item);
+                    item.menuProperties = .{
+                        .bounds = bounds,
+                        .nameBounds = nameBounds,
+                        .statePath = try allocator.dupe(u8, statePath),
+                        .elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType),
+                        .name = try allocator.dupe(u8, itemDef.name),
+                    };
+                    if (@hasField(itemType, "range")) {
+                        item.range = itemDef.range;
+                    }
+                    const valueType = switch (tag) {
+                        .int => i32,
+                        .float => f32,
+                        .string => []const u8
+                    };
+                    if(fieldPtrByPathExpect(valueType, state, statePath)) |valuePtr| {
+                        item.valuePtr = valuePtr;
                     } else {
-                        std.log.err("State path {s} not found or not parseable to i32", .{statePath});
+                        std.log.err("State path {s} not found or not parseable to {any}", .{statePath, tag});
                         return RayMenuError.StateFieldNotFound;
                     }
-                },
-                .float => {
-                    ret.* = .{ .float = try allocator.create(FloatMenuItem) };
-                    ret.float.*.menuProperties.bounds = bounds;
-                    ret.float.*.menuProperties.nameBounds = nameBounds;
-                    ret.float.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
-                    // ret.float.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.float, itemDefPtr.elementType);
-                    ret.float.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.float.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
-                    ret.float.*.range = itemDef.range;
-                    if(fieldPtrByPathExpect(f32, state, statePath)) |valuePtr| {
-                        ret.float.*.valuePtr = valuePtr;
-                    } else {
-                        std.log.err("State path {s} not found or not parseable to f32", .{statePath});
-                        return RayMenuError.StateFieldNotFound;
-                    }
-                },
-                .string => {
-                    ret.* = .{ .string = try allocator.create(StringMenuItem) };
-                    ret.string.*.menuProperties.bounds = bounds;
-                    ret.string.*.menuProperties.nameBounds = nameBounds;
-                    ret.string.*.menuProperties.statePath = try allocator.dupe(u8, statePath);
-                    // ret.string.*.menuProperties.elementType = try getValidUiElementTypeByMenuType(.string, itemDefPtr.elementType);
-                    ret.string.*.menuProperties.elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType);
-                    ret.string.*.menuProperties.name = try allocator.dupe(u8, itemDef.name);
-                    if(fieldPtrByPathExpect([]const u8, state, statePath)) |valuePtr| {
-                        ret.string.*.valuePtr = valuePtr;
-                    } else {
-                        std.log.err("State path {s} not found or not parseable to string", .{statePath});
-                        return RayMenuError.StateFieldNotFound;
-                    }
-                },
+                }
             }
             return ret;
         }
