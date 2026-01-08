@@ -1,14 +1,14 @@
 const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
-const mi = @import("raymenuutils.zig");
-const MenuItem = mi.MenuItem;
-const ItemDef = mi.ItemDef;
-const MenuItemType = mi.MenuItemType;
-const MenuItemTypeError = mi.MenuItemTypeError;
-const IntMenuItem = mi.IntMenuItem;
-const FloatMenuItem = mi.FloatMenuItem;
-const StringMenuItem = mi.StringMenuItem;
+const mu = @import("raymenuutils.zig");
+const MenuItem = mu.MenuItem;
+const ItemDef = mu.ItemDef;
+const MenuItemType = mu.MenuItemType;
+const MenuItemTypeError = mu.MenuItemTypeError;
+const IntMenuItem = mu.IntMenuItem;
+const FloatMenuItem = mu.FloatMenuItem;
+const StringMenuItem = mu.StringMenuItem;
 
 const Ymlz = @import("ymlz").Ymlz;
 const Rectangle = rl.Rectangle;
@@ -23,7 +23,7 @@ pub fn RayMenu(comptime T: type) type {
         const Self = @This();
 
         state: *T,
-        menuItems: []*mi.MenuItem,
+        menuItems: []*mu.MenuItem,
         allocator: std.mem.Allocator,
         filePath: []const u8,
 
@@ -83,7 +83,7 @@ pub fn RayMenu(comptime T: type) type {
             }
         }
 
-        fn drawFloatElements(menuItem: *mi.MenuItem, valuePtr: anytype) void {
+        fn drawFloatElements(menuItem: *mu.MenuItem, valuePtr: anytype) void {
             const menuProperties = menuItem.getMenuProperties();
             switch(menuProperties.elementType.?) {
                 .SLIDER => {
@@ -97,7 +97,7 @@ pub fn RayMenu(comptime T: type) type {
             }
         }
 
-        fn drawIntElements(menuItem: *mi.MenuItem, valuePtr: *i32) void {
+        fn drawIntElements(menuItem: *mu.MenuItem, valuePtr: *i32) void {
             const menuProperties = menuItem.getMenuProperties();
             if (menuProperties.elementType) |elementType| {
                 switch(elementType) {
@@ -113,7 +113,7 @@ pub fn RayMenu(comptime T: type) type {
             }
         }
 
-        fn drawStringElements(menuItem: *mi.MenuItem, valuePtr: *[]const u8) void {
+        fn drawStringElements(menuItem: *mu.MenuItem, valuePtr: *[]const u8) void {
             const menuProperties = menuItem.getMenuProperties();
             if (menuProperties.elementType) |elementType| {
                 switch(elementType) {
@@ -129,7 +129,7 @@ pub fn RayMenu(comptime T: type) type {
             return std.fmt.bufPrintZ(buf, "{d:.5}", .{ value }) catch "0";
         }
 
-        fn drawSlideBar(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: anytype) void {
+        fn drawSlideBar(menuProperties: mu.MenuProperties, range: mu.Range, valuePtr: anytype) void {
             var textLabelBuf: [64]u8 = undefined;
             const text = formatNumberLabel(&textLabelBuf, valuePtr.*);
             var nameLabelBuf: [64]u8 = undefined;
@@ -138,21 +138,21 @@ pub fn RayMenu(comptime T: type) type {
             _ = rg.sliderBar(menuProperties.bounds, "",text, valuePtr, range.lower, range.upper);
         }
 
-        fn drawValueBox(menuProperties: mi.MenuProperties, range: mi.Range, valuePtr: *i32) void {
+        fn drawValueBox(menuProperties: mu.MenuProperties, range: mu.Range, valuePtr: *i32) void {
             var label_buf: [64]u8 = undefined;
             const name = std.fmt.bufPrintZ(&label_buf, "{s}", .{ menuProperties.name }) catch "";
             _ = rg.label(menuProperties.nameBounds, name);
             _ = rg.valueBox(menuProperties.bounds, "", valuePtr, @intFromFloat(range.lower), @intFromFloat(range.upper), true);
         }
 
-        fn drawStringLabel(menuProperties: mi.MenuProperties, valuePtr: *[]const u8) void {
+        fn drawStringLabel(menuProperties: mu.MenuProperties, valuePtr: *[]const u8) void {
             var label_buf: [64]u8 = undefined;
             const prefix = menuProperties.name;
             const text = std.fmt.bufPrintZ(&label_buf, "{s} {s}", .{ prefix, valuePtr.* }) catch "";
             _ = rg.label(menuProperties.bounds, text);
         }
 
-        fn drawNumberLabel(menuProperties: mi.MenuProperties, valuePtr: anytype) void {
+        fn drawNumberLabel(menuProperties: mu.MenuProperties, valuePtr: anytype) void {
             var label_buf: [64]u8 = undefined;
             const text = formatNumberLabel(&label_buf, valuePtr.*);
             _ = rg.label(menuProperties.bounds, text);
@@ -166,7 +166,7 @@ pub fn RayMenu(comptime T: type) type {
         }
 
         fn getMenuItem(
-            itemDef: mi.YamlItemDef,
+            itemDef: mu.YamlItemDef,
             bounds: Rectangle,
             nameBounds: Rectangle,
             state: *T,
@@ -195,7 +195,7 @@ pub fn RayMenu(comptime T: type) type {
                         .bounds = bounds,
                         .nameBounds = nameBounds,
                         .statePath = try allocator.dupe(u8, statePath),
-                        .elementType = std.meta.stringToEnum(mi.UiElementType, itemDef.elementType),
+                        .elementType = std.meta.stringToEnum(mu.UiElementType, itemDef.elementType),
                         .name = try allocator.dupe(u8, itemDef.name),
                     };
                     if (@hasField(itemType, "range")) {
@@ -218,7 +218,7 @@ pub fn RayMenu(comptime T: type) type {
         }
 
         fn buildMenuItems(
-            menuDef: mi.YamlMenuDef,
+            menuDef: mu.YamlMenuDef,
             state: *T,
             allocator: std.mem.Allocator
         ) ![]*MenuItem {
@@ -268,7 +268,7 @@ pub fn RayMenu(comptime T: type) type {
             );
             defer allocator.free(yml_path);
 
-            var ymlz = try Ymlz(mi.YamlMenuDef).init(allocator);
+            var ymlz = try Ymlz(mu.YamlMenuDef).init(allocator);
             const result = try ymlz.loadFile(yml_path);
             defer ymlz.deinit(result);
 
