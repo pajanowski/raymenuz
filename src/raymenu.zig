@@ -26,8 +26,9 @@ pub fn RayMenu(comptime T: type) type {
         menuItems: []*mu.MenuItem,
         allocator: std.mem.Allocator,
         filePath: []const u8,
+        // windowOptions: fw.WindowOptions,
 
-        pub fn init(
+        pub fn initFromFile(
             filePath: []const u8,
             state: *T,
             allocator: std.mem.Allocator
@@ -349,7 +350,7 @@ test "RayMenu struct is correct" {
         },
     };
     var state = TestState{ .jumper = .{ .gravity = 1, .jumpPower = 2 } };
-    var devMenu = RayMenu(TestState).init(&state, 100, 200, std.testing.allocator);
+    var devMenu = RayMenu(TestState).initFromFile(&state, 100, 200, std.testing.allocator);
     defer devMenu.deinit();
 }
 
