@@ -3,7 +3,6 @@ const raymenuz = @import("raymenuz");
 const RayMenuz = raymenuz.RayMenu;
 const rl = @import("raylib");
 const rg = @import("raygui");
-const fw = @import("floatingwindow.zig");
 
 const Player = struct {
     rec: rl.Rectangle,
@@ -54,18 +53,7 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
     var menu = RayMenuz(State)
         .initFromFile("src/menu.yaml", &state, allocator);
-    const window_position = rl.Vector2{ .x = 10, .y = 10};
-    const window_size = rl.Vector2{ .x = 200, .y = 400};
-    const scroll: rl.Vector2 = rl.Vector2{ .x = -1, .y = -1};
 
-    var windowOptions = fw.WindowOptions{
-        .contentSize = rl.Vector2{ .x = 140, .y = 320 },
-        .drawContent = fw.drawContentExample,
-        .position = window_position,
-        .scroll = scroll,
-        .size = window_size,
-        .title = "Hello window"
-    };
     while (!rl.windowShouldClose()) // Detect window close button or ESC key
     {
         // Update
@@ -96,8 +84,7 @@ pub fn main() !void {
 
         menu.draw();
         if (rl.isKeyPressed(rl.KeyboardKey.r)) {
-            menu = try menu.reloadMenuItems();
+            try menu.reloadMenuItems();
         }
-        fw.floatingWindow(&windowOptions);
     }
 }

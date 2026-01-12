@@ -259,7 +259,17 @@ const expect = testing.expect;
 
 test "IntMenuItem can build" {
     var intValue: i32 = 420;
-    const menuItem = IntMenuItem.init(UiElementType.SLIDER, &intValue, Rectangle{ .width = 1, .height = 2, .y = 3, .x = 4 }, "player.points", "player.points", try Range.init(0, 100));
+    const menuItem = IntMenuItem{
+        .valuePtr = &intValue,
+        .menuProperties = MenuProperties{
+            .name = "player.points",
+            .elementType = .SLIDER,
+            .bounds = Rectangle{ .width = 1, .height = 2, .y = 3, .x = 4 },
+            .nameBounds = Rectangle{ .width = 1, .height = 2, .y = 3, .x = 4 },
+            .statePath = "player.points",
+        },
+        .range = try Range.init(0, 100),
+    };
     const returnedIntValue = menuItem.valuePtr.*;
 
     try testing.expectEqual(intValue, returnedIntValue);

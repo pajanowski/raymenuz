@@ -2,12 +2,12 @@ const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
-const WINDOW_STATUS_BAR_HEIGHT = 24;
+pub const WINDOW_STATUS_BAR_HEIGHT = 24;
 const WINDOW_CLOSE_BUTTON_SIZE = 18;
 const CLOSE_TITLE_SIZE_DELTA_HALF = (WINDOW_STATUS_BAR_HEIGHT - WINDOW_CLOSE_BUTTON_SIZE) / 2;
 const MIN_WINDOW_SIZE = 100;
 
-const DrawContentFn = *const fn(rl.Vector2, rl.Vector2) void;
+const DrawContentFn = *const fn(wo: *WindowOptions) void;
 
 pub const WindowOptions = struct {
     position: rl.Vector2,
@@ -19,29 +19,9 @@ pub const WindowOptions = struct {
     contentSize: rl.Vector2,
     scroll: rl.Vector2,
     title: []const u8,
+    user_data: ?*anyopaque = null,
 
     const Self = @This();
-
-    // pub fn init(
-    //     title: []const u8,
-    //     size: rl.Vector2,
-    //     position: rl.Vector2,
-    //     drawContent: DrawContentFn,
-    //     contentSize: rl.Vector2,
-    //     scroll: rl.Vector2
-    // ) Self {
-    //     return Self{
-    //         .minimized = false,
-    //         .moving = false,
-    //         .resizing = false,
-    //         .title = title,
-    //         .size = *size,
-    //         .drawContent = drawContent,
-    //         .position = *position,
-    //         .scroll = *scroll,
-    //         .contentSize = *contentSize
-    //     };
-    // }
 };
 
 pub fn floatingWindow(wo: *WindowOptions) void {
@@ -138,7 +118,7 @@ pub fn floatingWindow(wo: *WindowOptions) void {
             rl.beginScissorMode(@intFromFloat(scissor.x), @intFromFloat(scissor.y), @intFromFloat(scissor.width), @intFromFloat(scissor.height));
         }
 
-        wo.drawContent(wo.position, wo.scroll);
+        wo.drawContent(wo);
 
         if(require_scissor) {
             rl.endScissorMode();
@@ -151,7 +131,9 @@ pub fn floatingWindow(wo: *WindowOptions) void {
 }
 
 // for reference
-pub fn drawContentExample(position: rl.Vector2, window_scroll: rl.Vector2) void {
+pub fn drawContentExample(wo: *WindowOptions) void {
+    const position = wo.position;
+    const window_scroll = wo.scroll;
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 50 + window_scroll.y, .width = 100, .height = 25 }, "Button 1");
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 100 + window_scroll.y, .width = 100, .height = 25 }, "Button 2");
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 150  + window_scroll.y, .width = 100, .height = 25 }, "Button 3");
