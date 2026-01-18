@@ -2,29 +2,168 @@ const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
+const mu = @import("menu_utils.zig");
+
+pub const MenuItem = union(mu.UiElementType) {
+    SLIDER: Slider,
+    VALUE_BOX: ValueBox,
+    LABEL: Label
+};
+
+pub const CommonItemProps = struct {
+    itemBounds: rl.Rectangle = undefined,
+    nameBounds: rl.Rectangle = undefined,
+    name: [:0]const u8,
+};
+
+pub const Slider = struct {
+    props: CommonItemProps,
+    range: mu.Range,
+    valuePtr: *f32,
+
+    const Self = @This();
+
+    pub fn init(
+        name: [:0]const u8,
+        range: mu.Range,
+        valuePtr: *f32
+    ) MenuItem {
+        return MenuItem{
+            .SLIDER = Slider{
+                .props = CommonItemProps{
+                    .name = name
+                },
+                .range = range,
+                .valuePtr = valuePtr
+            }
+        };
+    }
+};
+
+pub const ValueBox = struct {
+    props: CommonItemProps,
+    range: mu.Range,
+    valuePtr: *i32
+};
+
+pub const Label = struct {
+    props: CommonItemProps,
+    range: mu.Range,
+    valuePtr: *i32
+};
+pub fn drawFloatElements(menuItem: *mu.MenuItem, valuePtr: anytype, position: rl.Vector2, scroll: rl.Vector2, disable: bool) void {
+    const menuProperties = menuItem.getMenuProperties();
+    switch(menuProperties.elementType.?) {
+        .SLIDER => {
+            const range = menuItem.getRange();
+            drawSlideBar(menuProperties, range, valuePtr, position, scroll, disable);
+        },
+        .LABEL => {
+            drawNumberLabel(menuProperties, valuePtr, position, scroll);
+        },
+        else => {}
+    }
+}
+
+pub fn drawIntElements(menuItem: *mu.MenuItem, valuePtr: *i32, position: rl.Vector2, scroll: rl.Vector2) void {
+    const menuProperties = menuItem.getMenuProperties();
+    if (menuProperties.elementType) |elementType| {
+        switch(elementType) {
+            .VALUE_BOX => {
+                const range = menuItem.getRange();
+                drawValueBox(menuProperties, range, valuePtr, position, scroll);
+            },
+            .LABEL => {
+                drawNumberLabel(menuProperties, valuePtr, position, scroll);
+            },
+            else => {}
+        }
+    }
+}
+
+pub fn drawStringElements(menuItem: *mu.MenuItem, valuePtr: *[]const u8, position: rl.Vector2, scroll: rl.Vector2) void {
+    const menuProperties = menuItem.getMenuProperties();
+    if (menuProperties.elementType) |elementType| {
+        switch(elementType) {
+            .LABEL => {
+                drawStringLabel(menuProperties, valuePtr, position, scroll);
+            },
+            else => {}
+        }
+    }
+}
+
+pub fn formatNumberLabel(buf: []u8, value: anytype) [:0]const u8 {
+    return std.fmt.bufPrintZ(buf, "{d:.5}", .{ value }) catch "0";
+}
+
+pub fn offsetRect(rect: rl.Rectangle, position: rl.Vector2, scroll: rl.Vector2) rl.Rectangle {
+    return rl.Rectangle {
+        .x = rect.x + position.x + scroll.x,
+        .y = rect.y + position.y + scroll.y,
+        .width = rect.width,
+        .height = rect.height
+    };
+}
+
+pub fn drawSlideBar(menuProperties: mu.MenuProperties, range: mu.Range, valuePtr: anytype, position: rl.Vector2, scroll: rl.Vector2, disable: bool) void {
+    const predrawValue: f32 = valuePtr.*;
+    var textLabelBuf: [64]u8 = undefined;
+    const text = formatNumberLabel(&textLabelBuf, valuePtr.*);
+    var nameLabelBuf: [64]u8 = undefined;
+    const name = std.fmt.bufPrintZ(&nameLabelBuf, "{s}", .{ menuProperties.name }) catch "";
+    _ = rg.label(offsetRect(menuProperties.nameBounds, position, scroll), name);
+    _ = rg.sliderBar(offsetRect(menuProperties.bounds, position, scroll), "", text, valuePtr, range.lower, range.upper);
+    if (disable) {
+        valuePtr.* = predrawValue;
+    }
+}
+
+pub fn drawValueBox(menuProperties: mu.MenuProperties, range: mu.Range, valuePtr: *i32, position: rl.Vector2, scroll: rl.Vector2) void {
+    var label_buf: [64]u8 = undefined;
+    const name = std.fmt.bufPrintZ(&label_buf, "{s}", .{ menuProperties.name }) catch "";
+    _ = rg.label(offsetRect(menuProperties.nameBounds, position, scroll), name);
+    _ = rg.valueBox(offsetRect(menuProperties.bounds, position, scroll), "", valuePtr, @intFromFloat(range.lower), @intFromFloat(range.upper), true);
+}
+
+pub fn drawStringLabel(menuProperties: mu.MenuProperties, valuePtr: *[]const u8, position: rl.Vector2, scroll: rl.Vector2) void {
+    var label_buf: [64]u8 = undefined;
+    const prefix = menuProperties.name;
+    const text = std.fmt.bufPrintZ(&label_buf, "{s} {s}", .{ prefix, valuePtr.* }) catch "";
+    _ = rg.label(offsetRect(menuProperties.bounds, position, scroll), text);
+}
+
+pub fn drawNumberLabel(menuProperties: mu.MenuProperties, valuePtr: anytype, position: rl.Vector2, scroll: rl.Vector2) void {
+    var label_buf: [64]u8 = undefined;
+    const text = formatNumberLabel(&label_buf, valuePtr.*);
+    _ = rg.label(offsetRect(menuProperties.bounds, position, scroll), text);
+}
+
+
 pub const WINDOW_STATUS_BAR_HEIGHT = 24;
 const WINDOW_CLOSE_BUTTON_SIZE = 18;
 const CLOSE_TITLE_SIZE_DELTA_HALF = (WINDOW_STATUS_BAR_HEIGHT - WINDOW_CLOSE_BUTTON_SIZE) / 2;
 const MIN_WINDOW_SIZE = 100;
 
-const DrawContentFn = *const fn(wo: *WindowOptions) void;
+const DrawContentFn = *const fn(wo: *Window) void;
 
-pub const WindowOptions = struct {
-    position: rl.Vector2,
-    size: rl.Vector2,
+pub const Window = struct {
+    title: []const u8,
+    position: rl.Vector2 = undefined,
+    size: rl.Vector2 = undefined,
     minimized: bool = false,
     moving: bool = false,
     resizing: bool = false,
-    drawContent: DrawContentFn,
-    contentSize: rl.Vector2,
-    scroll: rl.Vector2,
-    title: []const u8,
+    drawContent: DrawContentFn = undefined,
+    contentSize: rl.Vector2 = undefined,
+    scroll: rl.Vector2 = undefined,
     user_data: ?*anyopaque = null,
+    menuItems: []*MenuItem = undefined,
 
     const Self = @This();
 };
 
-pub fn floatingWindow(wo: *WindowOptions) void {
+pub fn floatingWindow(wo: *Window) void {
     var title_buf: [64]u8 = undefined;
     const title_text = std.fmt.bufPrintZ(&title_buf, "{s}", .{ wo.title }) catch "";
     const mouse_position = rl.getMousePosition();
@@ -130,10 +269,7 @@ pub fn floatingWindow(wo: *WindowOptions) void {
     }
 }
 
-// for reference
-pub fn drawContentExample(wo: *WindowOptions) void {
-    const position = wo.position;
-    const window_scroll = wo.scroll;
+fn drawContent(position: rl.Vector2, window_scroll: rl.Vector2) void {
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 50 + window_scroll.y, .width = 100, .height = 25 }, "Button 1");
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 100 + window_scroll.y, .width = 100, .height = 25 }, "Button 2");
     _ = rg.button(rl.Rectangle{ .x = position.x + 20 + window_scroll.x, .y = position.y + 150  + window_scroll.y, .width = 100, .height = 25 }, "Button 3");

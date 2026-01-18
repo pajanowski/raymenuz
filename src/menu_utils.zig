@@ -38,14 +38,15 @@ pub const YamlMenuDef = struct {
     itemDefs: []YamlItemDef
 };
 
-pub const ItemDef = struct {
-    name: []const u8,
-    menuItemType: []const u8,
-    statePath: []const u8,
-    elementType: []const u8,
-    bounds: Rectangle,
-    range: Range,
-};
+pub fn ItemDef(comptime T: type) type {
+    return struct {
+        name: []const u8,
+        menuItemType: MenuItemType,
+        valuePtr: *T,
+        elementType: UiElementType,
+        range: Range,
+    };
+}
 
 pub const MenuItemTypeError = error{
     MenuItemTypeUnknown,
@@ -234,22 +235,6 @@ pub const MenuItem = union(MenuItemType) {
             .float => |val| val.deinit(allocator),
             .string => |val| val.deinit(allocator),
         }
-        allocator.destroy(self);
-    }
-};
-
-pub const MenuDef = struct {
-    itemDefs: []ItemDef,
-
-    pub fn deinit(self: *MenuDef, allocator: std.mem.Allocator) void {
-        for (self.itemDefs) |itemDef| {
-            allocator.free(itemDef.menuItemType);
-            allocator.free(itemDef.statePath);
-            allocator.free(itemDef.elementType);
-            allocator.free(itemDef.name);
-            allocator.destroy(itemDef);
-        }
-        allocator.free(self.itemDefs);
         allocator.destroy(self);
     }
 };

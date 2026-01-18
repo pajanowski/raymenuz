@@ -1,6 +1,7 @@
 const std = @import("std");
 const raymenuz = @import("raymenuz");
-const RayMenuz = raymenuz.RayMenu;
+const rmf = raymenuz.raymenu_from_file;
+const RayMenuFromFile = rmf.RayMenuFromFile;
 const rl = @import("raylib");
 const rg = @import("raygui");
 
@@ -51,8 +52,8 @@ pub fn main() !void {
     );
     var state = State{.player = &player};
     const allocator = std.heap.page_allocator;
-    var menu = RayMenuz(State)
-        .initFromFile("src/menu.yaml", &state, allocator);
+    var menu = RayMenuFromFile(State)
+        .init("src/menu.yaml", &state, allocator);
 
     while (!rl.windowShouldClose()) // Detect window close button or ESC key
     {

@@ -120,7 +120,7 @@ There is also a working example in [src/main.zig](src/main.zig).
 - - - 
 ### Menu Definition
 
-#### drawSettings &rarr; DrawSettings defined in [raymenuutils.zig](src/raymenuutils.zig)
+#### drawSettings &rarr; DrawSettings defined in [raymenuutils.zig](src/menu_utils.zig)
 | Field    | Description                                                                                                        | Allowed Values |
 |:---------|:-------------------------------------------------------------------------------------------------------------------|:---------------|
 | paddingY | Vertical space between elements                                                                                    | Any integer    |
@@ -128,7 +128,7 @@ There is also a working example in [src/main.zig](src/main.zig).
 | width    | Width of elements                                                                                                  | Any integer    | 
 | height   | Height of elements                                                                                                 | Any integer    | 
 
-#### itemDefs, list of YamlItemDef defined in [raymenuutils.zig](src/raymenuutils.zig)
+#### itemDefs, list of YamlItemDef defined in [raymenuutils.zig](src/menu_utils.zig)
 | Field              | Description                                                                                               | Allowed Values                                     |
 |:-------------------|:----------------------------------------------------------------------------------------------------------|:---------------------------------------------------|
 | elementType        | Element type                                                                                              | SLIDER, VALUE_BOX, LABEL                           |
@@ -137,7 +137,7 @@ There is also a working example in [src/main.zig](src/main.zig).
 | menuItemType       | Type of value at statePath, currently float(f16-32), int(i8-32), and string([]const u8) are only supporte | float, int, string                                 | 
 | range              | Range for number based elements                                                                           | Valid struct definition                            | 
 
-#### range, Range defined in [raymenuutils.zig](src/raymenuutils.zig)
+#### range, Range defined in [raymenuutils.zig](src/menu_utils.zig)
 While only used for number-based elements, it is still required for all elements for the sake of parsing and memory alignment.
 
 | Field | Description | Allowed Values               |

@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     const ymlz = b.dependency("ymlz", .{});
 
     const mod = b.addModule("raymenuz", .{
-        .root_source_file = b.path("src/raymenu.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
 
