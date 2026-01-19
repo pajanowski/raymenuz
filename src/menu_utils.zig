@@ -9,7 +9,9 @@ const Ymlz = @import("ymlz").Ymlz;
 pub const UiElementType = enum {
     SLIDER,
     VALUE_BOX,
-    LABEL
+    LABEL,
+    LINE,
+    GROUP_BOX
 };
 
 pub const UiElementError = error {

@@ -13,8 +13,8 @@ const Player = struct {
     const Self = @This();
 
     pub fn init(
-    name: []const u8,
-    startingPos: rl.Vector2
+        name: []const u8,
+        startingPos: rl.Vector2
     ) Self {
         return Self{
             .name = name,

@@ -7,7 +7,9 @@ const mu = @import("menu_utils.zig");
 pub const MenuItem = union(mu.UiElementType) {
     SLIDER: Slider,
     VALUE_BOX: ValueBox,
-    LABEL: Label
+    LABEL: Label,
+    LINE: Line,
+    GROUP_BOX: GroupBox
 };
 
 pub const CommonItemProps = struct {
@@ -50,6 +52,44 @@ pub const Label = struct {
     props: CommonItemProps,
     range: mu.Range,
     valuePtr: *i32
+};
+
+pub const Line = struct {
+    props: CommonItemProps,
+
+    const Self = @This();
+
+    pub fn init(
+        name: [:0]const u8,
+    ) MenuItem {
+        return MenuItem{
+            .LINE = Line{
+                .props = CommonItemProps{
+                    .name = name
+                }
+            }
+        };
+    }
+};
+
+
+
+pub const GroupBox = struct {
+    props: CommonItemProps,
+
+    const Self = @This();
+
+    pub fn init(
+        name: [:0]const u8,
+    ) GroupBox {
+        return MenuItem{
+            .GROUP_BOX = GroupBox{
+                .props = CommonItemProps{
+                    .name = name
+                }
+            }
+        };
+    }
 };
 pub fn drawFloatElements(menuItem: *mu.MenuItem, valuePtr: anytype, position: rl.Vector2, scroll: rl.Vector2, disable: bool) void {
     const menuProperties = menuItem.getMenuProperties();
@@ -159,6 +199,7 @@ pub const Window = struct {
     scroll: rl.Vector2 = undefined,
     user_data: ?*anyopaque = null,
     menuItems: []*MenuItem = undefined,
+    z0Items: []*MenuItem = undefined,
 
     const Self = @This();
 };

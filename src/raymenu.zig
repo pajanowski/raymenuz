@@ -9,36 +9,77 @@ const MenuItem = du.MenuItem;
 pub const Slider = du.Slider;
 pub const ValueBox = du.ValueBox;
 pub const Label = du.Label;
+pub const Line = du.Line;
 
+const GroupBox = du.GroupBox;
+
+const X_INDENT = 5;
 pub const RayMenuWindowBuilder = struct {
     const MenuItemListType = std.array_list.Managed(*MenuItem);
 
     allocator: std.mem.Allocator,
     window: du.Window,
     menuItems: MenuItemListType,
+    z0Items: MenuItemListType,
     y: f32 = du.WINDOW_STATUS_BAR_HEIGHT + 4, // running y total
+    x: f32 = 0,
     maxWidth: f32 = 0, // running maxWidth
     drawSettings: mu.DrawSettings = mu.DrawSettings{
-        .paddingY = 5,
+        .paddingY = 0,
         .startX = 5,
         .width = 75,
         .height = 10,
         .nameHeight = 10,
         .namePadding = 0
     },
+    groupBoxStack: MenuItemListType,
 
     const Self = @This();
 
     pub fn init(title: []const u8, allocator: std.mem.Allocator) Self {
        return Self{
            .menuItems = MenuItemListType.init(allocator),
+           .z0Items = MenuItemListType.init(allocator),
            .allocator = allocator,
            .window = du.Window{
                .title = title,
                .drawContent = RayMenu.drawContentCallback,
                .contentSize = undefined
            },
+           .groupBoxStack = MenuItemListType.init(allocator)
        };
+    }
+    
+    pub fn startGroup(self: *Self, name: [:0]const u8) !void {
+        // const drawSettings = self.drawSettings;
+        const menuItem = try self.allocator.create(MenuItem);
+        self.x = self.x + X_INDENT;
+        self.y = self.y + 5;
+        menuItem.* = @unionInit(MenuItem, @tagName(mu.UiElementType.GROUP_BOX), GroupBox{
+            .props = du.CommonItemProps{
+                .name = name,
+                .itemBounds = rl.Rectangle{
+                    .x = self.x,
+                    .y = self.y,
+                    .width = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2 - 2 * self.x,
+                    .height = -1,
+                }
+            }
+        });
+        self.y = self.y + 5;
+        try self.groupBoxStack.append(menuItem);
+    }
+
+    pub fn endGroup(self: *Self) !void {
+        const groupBox = self.groupBoxStack.pop();
+        if (groupBox) |unwrapped| {
+            unwrapped.GROUP_BOX.props.itemBounds.height = self.y;
+            self.y = self.y + self.drawSettings.height + self.drawSettings.paddingY;
+            self.x = self.x - X_INDENT;
+            try self.z0Items.append(unwrapped);
+        } else {
+            @panic("Attempted to end a group when never started");
+        }
     }
 
     pub fn addMenuItem(self: *Self, menuItem: MenuItem) !void {
@@ -46,6 +87,7 @@ pub const RayMenuWindowBuilder = struct {
         var needsLabel = true;
         switch (menuItem) {
             .LABEL => needsLabel = false,
+            .LINE => needsLabel = false,
             else => {}
         }
 
@@ -58,8 +100,8 @@ pub const RayMenuWindowBuilder = struct {
                 if (needsLabel) {
                     item.props.nameBounds = rl.Rectangle{
                         .width = drawSettings.width,
-                        .height = drawSettings.height,
-                        .x = drawSettings.startX,
+                        .height = drawSettings.nameHeight,
+                        .x = drawSettings.startX + self.x,
                         .y = self.y
                     };
                     self.y = self.y + drawSettings.nameHeight + drawSettings.namePadding;
@@ -68,26 +110,26 @@ pub const RayMenuWindowBuilder = struct {
                 item.props.name = try self.allocator.dupeZ(u8, item.props.name);
                 item.props.itemBounds.height = drawSettings.height;
                 item.props.itemBounds.width = drawSettings.width;
-                item.props.itemBounds.x = drawSettings.startX;
+                item.props.itemBounds.x = drawSettings.startX + self.x;
                 item.props.itemBounds.y = self.y;
-                self.y = self.y + drawSettings.nameHeight + drawSettings.namePadding;
+                self.y = self.y + drawSettings.height + drawSettings.paddingY;
             },
         }
 
-        const currentWidth = drawSettings.startX + drawSettings.width;
-        if (currentWidth > self.maxWidth) self.maxWidth = currentWidth;
+        // const currentWidth = drawSettings.startX + drawSettings.width;
+        // if (currentWidth > self.maxWidth) self.maxWidth = currentWidth;
         self.y = self.y + drawSettings.height + drawSettings.paddingY;
         try self.menuItems.append(ret);
     }
 
-    pub fn addMenuItems(self: *Self, menuItems: []const *MenuItem) !void {
-        for (menuItems) |item| {
-            try self.addMenuItem(item.*);
-        }
-    }
+    // pub fn addMenuItems(self: *Self, menuItems: []const *MenuItem) !void {
+        // for (menuItems) |item| {
+            // try self.addMenuItem(item.*);
+        // }
+    // }
 
     pub fn build(self: *Self) !du.Window {
-        const contentSize = rl.Vector2{ .x = (self.maxWidth + self.drawSettings.startX) * 2, .y = self.y - self.drawSettings.paddingY };
+        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.y - self.drawSettings.paddingY };
         const size = rl.Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
 
         self.window.contentSize = contentSize;
@@ -95,6 +137,7 @@ pub const RayMenuWindowBuilder = struct {
         self.window.position = rl.Vector2{.x = 2, .y = 2};
         self.window.scroll = rl.Vector2{.x = 0, .y = 0};
         self.window.menuItems = try self.menuItems.toOwnedSlice();
+        self.window.z0Items = try self.z0Items.toOwnedSlice();
         return self.window;
     }
 };
@@ -127,6 +170,20 @@ pub const RayMenu = struct {
         const position = window.position;
         const scroll = window.scroll;
 
+        const n = window.z0Items.len;
+        for(0..n) |reverse_i| {
+            const i = n - 1 - reverse_i;
+            const item = window.z0Items[i];
+            switch(item.*) {
+                .GROUP_BOX => |active| {
+                    // std.debug.print("groupBox {any}", .{active});
+                    _ = rg.groupBox(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
+                },
+                else => @panic("An unsupported menuItem type made it into z0items")
+            }
+        }
+
+
         for (window.menuItems) |menuItem| {
             switch(menuItem.*) {
                 .SLIDER => |active| {
@@ -140,6 +197,12 @@ pub const RayMenu = struct {
                 },
                 .LABEL => |_| {
                     std.debug.print("draw label\n", .{});
+                },
+                .LINE => |active| {
+                    _ = rg.line(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
+                },
+                .GROUP_BOX => |active| {
+                    _ = rg.groupBox(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
                 }
             }
         }
