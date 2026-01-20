@@ -1,55 +1,65 @@
 # raymenuz
-## A dynamic menu library for raylib and raygui written in Zig
+## A raygui wrapper for quick menus written in zig
 - - -
 ### Main Features:
+- Easy API for creating raygui menus fast
+- Yaml File defined menus
 - Hot reloading
-- Semi-automatic element positioning
-- Yaml defined menus
+
  - - -
 ### Installation
 These directions assume that you already have a working raylib project.
 
-raymenuz requires 3 libraries
+raymenuz requires 2 libraries
 - raylib-zig https://github.com/raylib-zig/raylib-zig
 - raygui (included in raylib-zig)
-- ymlz https://github.com/pwbh/ymlz
+- ymlz https://github.com/pwbh/ymlz (only if using YAML defined menus)
 
 Install with 
 `zig fetch --save git+https://github.com/pajanowski/raymenuz.git#HEAD`
 
 In your `build.zig`
 ```zig
+    const raylib_dep = b.dependency("raylib-zig", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const raylib_mod = raylib_dep.module("raylib");
+    const raygui_mod = raylib_dep.module("raygui");
+
     const raymenuz = b.dependency("raymenuz", .{});
     const ymlz = b.dependency("ymlz", .{});
 
-    const mod = b.addModule("", .{
+    const mod = b.addModule("your_module", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
+        .optimize = optimize,
     });
 
     const raymenuz_mod = raymenuz.module("raymenuz");
-    raymenuz_mod.addImport("raylib", raylib);
-    raymenuz_mod.addImport("raygui", raygui);
+    raymenuz_mod.addImport("raylib", raylib_mod);
+    raymenuz_mod.addImport("raygui", raygui_mod);
     raymenuz_mod.addImport("ymlz", ymlz.module("root"));
-
 
     mod.addImport("raymenuz", raymenuz_mod);
 
-    exe.root_module.addImport("raymenuz", raymenuz_mod);
+    // If using an executable:
+    // exe.root_module.addImport("raymenuz", raymenuz_mod);
 ```
 - - - 
-### Usage
+### Usage (File defined)
+
+`RayMenuFromFile` allows you to define your menu in a YAML file and hot-reload it during development.
+
 ```zig
-const RayMenu = @import("raymenuz").RayMenu;
+const std = @import("std");
+const rl = @import("raylib");
+const raymenuz = @import("raymenuz");
+const RayMenuFromFile = raymenuz.raymenu_from_file.RayMenuFromFile;
 
 pub const Player = struct {
-    vel: Vector2,
-
-    gravity: f32 = -100,
-    jumpPower: f32 = 20,
-
-    bounces: u16 = 0,
-    xSpeed: i32 = 5,
+    speed: rl.Vector2,
+    // ...
 };
 
 pub const GameState = struct {
@@ -57,34 +67,34 @@ pub const GameState = struct {
 };
 
 pub fn main() !void {
-    var state = GameState.init();
-    var rayMenu = RayMenu(GameState).init(
-        "src/menu.yml",
+    // ... raylib initialization ...
+    const allocator = std.heap.page_allocator;
+
+    var player = Player{ .speed = .{ .x = 2, .y = 2 } };
+    var state = GameState{ .player = &player };
+
+    var rayMenu = RayMenuFromFile(GameState).init(
+        "src/menu.yaml",
         &state,
         allocator
     );
 
     while (!rl.windowShouldClose()) { 
-        // Update your application
         rl.beginDrawing();
         defer rl.endDrawing();
-
-        rl.clearBackground(.white);
-        rl.beginMode2D(camera);
-            // Draw your game
-        rl.endMode2D();
+        rl.clearBackground(rl.Color.ray_white);
         
         rayMenu.draw();
-        if(rl.isKeyPressed(rl.KeyboardKey.r)) {
-            if(rayMenu.reloadMenuItems()) |newDevMenu| {
-                rayMenu = rayMenu;
-            } else |err| {
+
+        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
+            rayMenu.reloadMenuItems() catch |err| {
                 std.log.err("Failed to reload menu items {any}", .{err});
-            }
+            };
         }
     }
 }
 ```
+
 
 ```yaml
 drawSettings:
@@ -115,7 +125,49 @@ itemDefs:
       upper: -1
       lower: -1
 ```
+
 There is also a working example in [src/main.zig](src/main.zig).
+
+### Usage (Manual)
+
+`RayMenu` and `RayMenuWindowBuilder` allow you to create menus programmatically in Zig code.
+
+```zig
+const std = @import("std");
+const rl = @import("raylib");
+const raymenuz = @import("raymenuz");
+const rm = raymenuz.raymenu;
+
+pub fn main() !void {
+    // ... raylib initialization ...
+    const allocator = std.heap.page_allocator;
+
+    var speed: f32 = 5.0;
+
+    const slider = rm.Slider.init("Speed", raymenuz.mu.Range{.lower = 0, .upper = 10}, &speed);
+    const button = rm.Button.init("Reset", resetCallback);
+
+    var windowBuilder = rm.RayMenuWindowBuilder.init("Dev Menu", allocator);
+    try windowBuilder.startGroup("Player Settings");
+      try windowBuilder.addMenuItem(slider);
+    try windowBuilder.endGroup();
+    try windowBuilder.addMenuItem(button);
+    
+    var window = try windowBuilder.build();
+
+    var rayMenu = rm.RayMenu.init(allocator);
+    try rayMenu.addWindow(&window);
+
+    while (!rl.windowShouldClose()) {
+        rl.beginDrawing();
+        defer rl.endDrawing();
+        rl.clearBackground(rl.Color.ray_white);
+
+        rayMenu.draw();
+    }
+}
+```
+
 
 - - - 
 ### Menu Definition
@@ -147,26 +199,27 @@ While only used for number-based elements, it is still required for all elements
 
 ### raygui elements
 
-| Element          | Status              | elementType | Supported menuItemType   |
-|:-----------------|:--------------------|-------------|:-------------------------|
-| **Slider**       | Supported           | `SLIDER`    | `float`                  |
-| **ValueBox**     | Supported           | `VALUE_BOX` | `int`                    |
-| **Label**        | Supported | `LABEL`     | `int`, `float`, `string` |
-| **Button**       | Planned             |             | -                        |
-| **TextBox**      | Planned             |             | -                        |
-| **SliderBar**    | Planned             |             | -                        |
-| **ProgressBar**  | Planned             |             | -                        |
-| **StatusBar**    | Planned             |             | -                        |
-| **CheckBox**     | Planned             |             | -                        |
-| **LabelButton**  | Planned             |             | -                        |
-| **Toggle**       | Needs Consideration |             | -                        |
-| **ToggleGroup**  | Needs Consideration |             | -                        |
-| **ToggleSlider** | Needs Consideration |             | -                        |
-| **ComboBox**     | Needs Consideration |             | -                        |
-| **DropdownBox**  | Needs Consideration |             | -                        |
-| **Spinner**      | Needs Consideration |             | -                        |
-| **DummyRec**     | Needs Consideration |             | -                        |
-| **Grid**         | Needs Consideration |             | -                        |
+| Element          | File Defined Status | Manually Defined Status | File Defined elementType value | File Defined Supported menuItemType |
+|:-----------------|:--------------------|-------------------------|--------------------------------|:------------------------------------|
+| **Slider**       | Supported           | Supported               | `SLIDER`                       | `float`                             |
+| **ValueBox**     | Supported           | Planned                 | `VALUE_BOX`                    | `int`                               |
+| **Label**        | Supported           | Planned                 | `LABEL`                        | `int`, `float`, `string`            |
+| **Button**       | Planned             | Supported               |                                | -                                   |
+| **TextBox**      | Planned             |                         |                                | -                                   |
+| **SliderBar**    | Planned             |                         |                                | -                                   |
+| **ProgressBar**  | Planned             |                         |                                | -                                   |
+| **StatusBar**    | Planned             |                         |                                | -                                   |
+| **CheckBox**     | Planned             |                         |                                | -                                   |
+| **LabelButton**  | Planned             |                         |                                | -                                   |
+| **Toggle**       | Needs Consideration |                         |                                | -                                   |
+| **ToggleGroup**  | Needs Consideration |                         |                                | -                                   |
+| **ToggleSlider** | Needs Consideration |                         |                                | -                                   |
+| **ComboBox**     | Needs Consideration |                         |                                | -                                   |
+| **DropdownBox**  | Needs Consideration |                         |                                | -                                   |
+| **Spinner**      | Needs Consideration |                         |                                | -                                   |
+| **DummyRec**     | Needs Consideration |                         |                                | -                                   |
+| **Grid**         | Needs Consideration |                         |                                | -                                   |
+| **GroupBox**     | Needs Consideration | Supported               |                                | -                                   |
  - - -
 ### Known Errors
 Error handling improvements will be made for errors that happen outside of this library, better error handling, more specific log messages, etc.
@@ -189,7 +242,7 @@ Error handling improvements will be made for errors that happen outside of this 
 ### Contributing
 Please create an issue before putting up a pull request.
 
-This libary is also fairly small and adding new elementTypes for the existing menuItemTypes should be fairly straight forward, and maybe qualify as a good first issue.
+This library is also fairly small. Akdding new elementTypes for the existing menuItemTypes should be fairly straight forward and maybe qualify as a good first issue.
 1. Add a `draw(rayguiElement)` in RayMenu
 2. Add the new element type to the UiElementType enum in `raymenuutils.zig`
 3. Add a corresponding branch to `draw(menuItemType)Elements`
