@@ -9,7 +9,8 @@ pub const MenuItem = union(mu.UiElementType) {
     VALUE_BOX: ValueBox,
     LABEL: Label,
     LINE: Line,
-    GROUP_BOX: GroupBox
+    GROUP_BOX: GroupBox,
+    BUTTON: Button
 };
 
 pub const CommonItemProps = struct {
@@ -72,7 +73,28 @@ pub const Line = struct {
     }
 };
 
+const ButtonFn = *const fn() void;
 
+pub const Button = struct {
+    props: CommonItemProps,
+    buttonFn: ButtonFn,
+
+    const Self = @This();
+
+    pub fn init(
+        name: [:0]const u8,
+        buttonFn: ButtonFn
+    ) MenuItem {
+        return MenuItem{
+            .BUTTON = Button{
+                .props = CommonItemProps{
+                    .name = name
+                },
+                .buttonFn = buttonFn
+            }
+        };
+    }
+};
 
 pub const GroupBox = struct {
     props: CommonItemProps,

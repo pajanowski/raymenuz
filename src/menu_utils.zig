@@ -11,7 +11,8 @@ pub const UiElementType = enum {
     VALUE_BOX,
     LABEL,
     LINE,
-    GROUP_BOX
+    GROUP_BOX,
+    BUTTON
 };
 
 pub const UiElementError = error {

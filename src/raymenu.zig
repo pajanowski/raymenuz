@@ -10,6 +10,7 @@ pub const Slider = du.Slider;
 pub const ValueBox = du.ValueBox;
 pub const Label = du.Label;
 pub const Line = du.Line;
+pub const Button = du.Button;
 
 const GroupBox = du.GroupBox;
 
@@ -73,7 +74,7 @@ pub const RayMenuWindowBuilder = struct {
     pub fn endGroup(self: *Self) !void {
         const groupBox = self.groupBoxStack.pop();
         if (groupBox) |unwrapped| {
-            unwrapped.GROUP_BOX.props.itemBounds.height = self.y;
+            unwrapped.GROUP_BOX.props.itemBounds.height = self.y - unwrapped.GROUP_BOX.props.itemBounds.y;
             self.y = self.y + self.drawSettings.height + self.drawSettings.paddingY;
             self.x = self.x - X_INDENT;
             try self.z0Items.append(unwrapped);
@@ -88,6 +89,7 @@ pub const RayMenuWindowBuilder = struct {
         switch (menuItem) {
             .LABEL => needsLabel = false,
             .LINE => needsLabel = false,
+            .BUTTON => needsLabel = false,
             else => {}
         }
 
@@ -95,8 +97,14 @@ pub const RayMenuWindowBuilder = struct {
         ret.* = menuItem;
 
         switch (ret.*) {
+            .BUTTON => |*item| {
+                item.props.name = try self.allocator.dupeZ(u8, item.props.name);
+                item.props.itemBounds.height = 20;
+                item.props.itemBounds.width = drawSettings.width;
+                item.props.itemBounds.x = drawSettings.startX + self.x;
+                item.props.itemBounds.y = self.y;
+            },
             inline else => |*item| {
-
                 if (needsLabel) {
                     item.props.nameBounds = rl.Rectangle{
                         .width = drawSettings.width,
@@ -122,14 +130,23 @@ pub const RayMenuWindowBuilder = struct {
         try self.menuItems.append(ret);
     }
 
-    // pub fn addMenuItems(self: *Self, menuItems: []const *MenuItem) !void {
-        // for (menuItems) |item| {
-            // try self.addMenuItem(item.*);
-        // }
-    // }
-
+    fn getEndOfConent(self: *Self) f32 {
+        var maxYz0Items: f32 = 0;
+        switch (self.z0Items.getLast().*) {
+            inline else => |*active| {
+                maxYz0Items = active.props.itemBounds.y + active.props.itemBounds.height;
+            }
+        }
+        var maxYMenuItem: f32 = 0;
+        switch (self.menuItems.getLast().*) {
+            inline else => |*active| {
+                maxYMenuItem = active.props.itemBounds.y + active.props.itemBounds.height;
+            }
+        }
+        return @as(f32, @max(maxYMenuItem, maxYz0Items));
+    }
     pub fn build(self: *Self) !du.Window {
-        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.y - self.drawSettings.paddingY };
+        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.getEndOfConent() };
         const size = rl.Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
 
         self.window.contentSize = contentSize;
@@ -201,9 +218,12 @@ pub const RayMenu = struct {
                 .LINE => |active| {
                     _ = rg.line(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
                 },
-                .GROUP_BOX => |active| {
-                    _ = rg.groupBox(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
-                }
+                .BUTTON => |active| {
+                    if (rg.button(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name)) {
+                        active.buttonFn();
+                    }
+                },
+                else => unreachable
             }
         }
     }
