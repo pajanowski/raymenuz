@@ -4,13 +4,27 @@ const du = @import("draw_utils.zig");
 const rl = @import("raylib");
 
 const MenuItem = du.MenuItem;
-pub const DrawSettings = mu.DrawSettings;
 
 pub const Slider = du.Slider;
 pub const ValueBox = du.ValueBox;
 pub const Label = du.Label;
 pub const Line = du.Line;
 pub const Button = du.Button;
+pub const LabelButton = du.LabelButton;
+pub const Toggle = du.Toggle;
+pub const CheckBox = du.CheckBox;
+pub const ComboBox = du.ComboBox;
+pub const DropdownBox = du.DropdownBox;
+pub const TextBox = du.TextBox;
+pub const Spinner = du.Spinner;
+pub const SliderBar = du.SliderBar;
+pub const ProgressBar = du.ProgressBar;
+pub const StatusBar = du.StatusBar;
+pub const ToggleGroup = du.ToggleGroup;
+pub const ToggleSlider = du.ToggleSlider;
+pub const DummyRec = du.DummyRec;
+pub const Grid = du.Grid;
+pub const DrawSettings = mu.DrawSettings;
 
 const GroupBox = du.GroupBox;
 
@@ -123,7 +137,10 @@ pub const RayMenuWindowBuilder = struct {
             .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2,
             .y = self.boundsCalc.getY() - self.boundsCalc.lastAdvancedAmount
         };
-        const size = rl.Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
+        const size = rl.Vector2{
+            .x = @min(contentSize.x + 16, @as(f32, @floatFromInt(rl.getScreenWidth()))),
+            .y = @min(contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8, @as(f32, @floatFromInt(rl.getScreenHeight())))
+        };
 
         self.window.contentSize = contentSize;
         self.window.size = size;
@@ -180,17 +197,59 @@ pub const RayMenu = struct {
                 .SLIDER => |active| {
                     du.drawSlider(&active, position, scroll);
                 },
-                .VALUE_BOX => |_| {
-                    std.debug.print("draw value\n", .{});
+                .VALUE_BOX => |active| {
+                    du.drawValueBoxElement(&active, position, scroll);
                 },
-                .LABEL => |_| {
-                    std.debug.print("draw label\n", .{});
+                .LABEL => |active| {
+                    du.drawLabelElement(&active, position, scroll);
                 },
                 .LINE => |active| {
                     du.drawLine(&active, position, scroll);
                 },
                 .BUTTON => |active| {
                     du.drawButton(&active, position, scroll);
+                },
+                .LABEL_BUTTON => |active| {
+                    du.drawLabelButton(&active, position, scroll);
+                },
+                .TOGGLE => |active| {
+                    du.drawToggle(&active, position, scroll);
+                },
+                .CHECK_BOX => |active| {
+                    du.drawCheckBox(&active, position, scroll);
+                },
+                .COMBO_BOX => |active| {
+                    du.drawComboBox(&active, position, scroll);
+                },
+                .DROPDOWN_BOX => |active| {
+                    du.drawDropdownBox(&active, position, scroll);
+                },
+                .TEXT_BOX => |active| {
+                    du.drawTextBox(&active, position, scroll);
+                },
+                .SPINNER => |active| {
+                    du.drawSpinner(&active, position, scroll);
+                },
+                .SLIDER_BAR => |active| {
+                    du.drawSliderBarElement(&active, position, scroll);
+                },
+                .PROGRESS_BAR => |active| {
+                    du.drawProgressBar(&active, position, scroll);
+                },
+                .STATUS_BAR => |active| {
+                    du.drawStatusBar(&active, position, scroll);
+                },
+                .TOGGLE_GROUP => |active| {
+                    du.drawToggleGroup(&active, position, scroll);
+                },
+                .TOGGLE_SLIDER => |active| {
+                    du.drawToggleSlider(&active, position, scroll);
+                },
+                .DUMMY_REC => |active| {
+                    du.drawDummyRec(&active, position, scroll);
+                },
+                .GRID => |active| {
+                    du.drawGrid(&active, position, scroll);
                 },
                 else => unreachable
             }

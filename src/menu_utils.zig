@@ -7,12 +7,28 @@ const Rectangle = rl.Rectangle;
 const Ymlz = @import("ymlz").Ymlz;
 
 pub const UiElementType = enum {
+    // Existing
     SLIDER,
     VALUE_BOX,
     LABEL,
     LINE,
     GROUP_BOX,
-    BUTTON
+    BUTTON,
+    // New basic controls
+    LABEL_BUTTON,
+    TOGGLE,
+    TOGGLE_GROUP,
+    TOGGLE_SLIDER,
+    CHECK_BOX,
+    COMBO_BOX,
+    DROPDOWN_BOX,
+    TEXT_BOX,
+    SPINNER,
+    SLIDER_BAR,
+    PROGRESS_BAR,
+    STATUS_BAR,
+    DUMMY_REC,
+    GRID
 };
 
 pub const UiElementError = error {
