@@ -1,23 +1,20 @@
 const std = @import("std");
-const raymenuz = @import("raymenuz");
-const rmf = raymenuz.raymenu_from_file;
-const RayMenuFromFile = rmf.RayMenuFromFile;
 const rl = @import("raylib");
 const rg = @import("raygui");
+
+const raymenuz = @import("raymenuz");
+const rm = raymenuz.raymenu;
+const rmf = raymenuz.raymenu_from_file;
 
 const Player = struct {
     rec: rl.Rectangle,
     speed: rl.Vector2,
-    name: []const u8,
-
     const Self = @This();
 
     pub fn init(
-        name: []const u8,
         startingPos: rl.Vector2
     ) Self {
         return Self{
-            .name = name,
             .rec = rl.Rectangle{
                 .height = 10,
                 .width = 10,
@@ -36,6 +33,14 @@ const State = struct {
    player: *Player
 };
 
+fn buttonTest() void {
+    std.debug.print("Button works!!\n", .{});
+}
+
+fn buttonTest2() void {
+    std.debug.print("Button 2 works!!\n", .{});
+}
+
 pub fn main() !void {
     // Prints to stderr, ignoring potential errors.
     const screen_width = 800;
@@ -47,13 +52,37 @@ pub fn main() !void {
     rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
 
     var player = Player.init(
-        "ray",
         rl.Vector2{.x = screen_width / 2, .y = screen_height / 2}
     );
     var state = State{.player = &player};
     const allocator = std.heap.page_allocator;
-    var menu = RayMenuFromFile(State)
-        .init("src/menu.yaml", &state, allocator);
+
+    const line = rm.Line.init("Separator line");
+    const slider = rm.Slider.init("player x speed", raymenuz.mu.Range{.lower = 10, .upper = 20}, &state.player.speed.x);
+    const slider2 = rm.Slider.init("player y speed", raymenuz.mu.Range{.lower = 10, .upper = 20}, &state.player.speed.y);
+
+    var windowBuilder = rm.RayMenuWindowBuilder
+        .init("This is a test window", allocator);
+    try windowBuilder.startGroup("Actors Group");
+        try windowBuilder.startGroup("Player Group");
+            try windowBuilder.addMenuItem(slider);
+            try windowBuilder.addMenuItem(line);
+            try windowBuilder.addMenuItem(slider2);
+        try windowBuilder.endGroup();
+        const testButton = rm.Button.init("Test Button", buttonTest);
+        try windowBuilder.addMenuItem(testButton);
+    try windowBuilder.endGroup();
+
+    try windowBuilder.startGroup("Group 2");
+        const testButton2 = rm.Button.init("Test Button 2", buttonTest2);
+        try windowBuilder.addMenuItem(testButton2);
+    try windowBuilder.endGroup();
+
+    var window = try windowBuilder.build();
+
+    var rayMenu = rm.RayMenu
+        .init(allocator);
+    _ = try rayMenu.addWindow(&window);
 
     while (!rl.windowShouldClose()) // Detect window close button or ESC key
     {
@@ -83,9 +112,6 @@ pub fn main() !void {
         rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.light_gray);
         //----------------------------------------------------------------------------------
 
-        menu.draw();
-        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
-            try menu.reloadMenuItems();
-        }
+        rayMenu.draw();
     }
 }

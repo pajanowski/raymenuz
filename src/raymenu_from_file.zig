@@ -181,22 +181,15 @@ pub fn RayMenuFromFile(comptime T: type) type {
         ) !MenuBuildResult {
             var ret = std.array_list.Managed(*MenuItem).init(allocator);
             const drawSettings = menuDef.drawSettings;
-            var y: f32 = du.WINDOW_STATUS_BAR_HEIGHT + 4; // Start at 0, we'll apply window offset elsewhere if needed or here
+            var boundsCalc = du.BoundsCalculator.init(drawSettings);
             var maxWidth: f32 = 0;
             var menuError: ?anyerror = undefined;
             const itemDefs = menuDef.itemDefs;
+
             for (itemDefs) |itemDef| {
-                var nameBounds = Rectangle{.height = 0, .width = 0, .x = 0, .y = 0};
-                if (!std.mem.eql(u8, itemDef.elementType, "LABEL")) {
-                    nameBounds = Rectangle{ .width = drawSettings.width, .height = drawSettings.height, .x = drawSettings.startX, .y = y };
-                    y = y + drawSettings.nameHeight + drawSettings.namePadding;
-                }
-                const elementBounds = Rectangle{
-                    .width = drawSettings.width,
-                    .height = drawSettings.height,
-                    .x = drawSettings.startX,
-                    .y = y
-                };
+                const isLabel = std.mem.eql(u8, itemDef.elementType, "LABEL");
+                const nameBounds = boundsCalc.getNameBounds(0, !isLabel);
+                const elementBounds = boundsCalc.getItemBounds(0);
 
                 const currentWidth = drawSettings.startX + drawSettings.width;
                 if (currentWidth > maxWidth) maxWidth = currentWidth;
@@ -212,10 +205,11 @@ pub fn RayMenuFromFile(comptime T: type) type {
                 } else |err| {
                     menuError = err;
                 }
-                y = y + drawSettings.height + drawSettings.paddingY;
+                boundsCalc.advanceY();
             }
 
-            const contentSize = Vector2{ .x = (maxWidth + drawSettings.startX) * 2, .y = y - drawSettings.paddingY };
+            const finalY = boundsCalc.getY();
+            const contentSize = Vector2{ .x = (maxWidth + drawSettings.startX) * 2, .y = finalY };
             const size = Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
             return MenuBuildResult {
                 .items = try ret.toOwnedSlice(),

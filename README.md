@@ -126,7 +126,7 @@ itemDefs:
       lower: -1
 ```
 
-There is also a working example in [src/main.zig](src/main.zig).
+There is also a working example in [src/main.zig](src/examples/raymenu_from_file_example.zig).
 
 ### Usage (Manual)
 

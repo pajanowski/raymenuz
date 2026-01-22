@@ -2,7 +2,6 @@ const std = @import("std");
 const mu = @import("menu_utils.zig");
 const du = @import("draw_utils.zig");
 const rl = @import("raylib");
-const rg = @import("raygui");
 
 const MenuItem = du.MenuItem;
 
@@ -22,11 +21,11 @@ pub const RayMenuWindowBuilder = struct {
     window: du.Window,
     menuItems: MenuItemListType,
     z0Items: MenuItemListType,
-    y: f32 = du.WINDOW_STATUS_BAR_HEIGHT + 4, // running y total
+    boundsCalc: du.BoundsCalculator,
     x: f32 = 0,
     maxWidth: f32 = 0, // running maxWidth
     drawSettings: mu.DrawSettings = mu.DrawSettings{
-        .paddingY = 0,
+        .paddingY = 5,
         .startX = 5,
         .width = 75,
         .height = 10,
@@ -38,6 +37,14 @@ pub const RayMenuWindowBuilder = struct {
     const Self = @This();
 
     pub fn init(title: []const u8, allocator: std.mem.Allocator) Self {
+        const drawSettings = mu.DrawSettings{
+            .paddingY = 5,
+            .startX = 5,
+            .width = 75,
+            .height = 10,
+            .nameHeight = 10,
+            .namePadding = 0
+        };
        return Self{
            .menuItems = MenuItemListType.init(allocator),
            .z0Items = MenuItemListType.init(allocator),
@@ -47,35 +54,38 @@ pub const RayMenuWindowBuilder = struct {
                .drawContent = RayMenu.drawContentCallback,
                .contentSize = undefined
            },
-           .groupBoxStack = MenuItemListType.init(allocator)
+           .groupBoxStack = MenuItemListType.init(allocator),
+           .boundsCalc = du.BoundsCalculator.init(drawSettings),
+           .drawSettings = drawSettings
        };
     }
     
     pub fn startGroup(self: *Self, name: [:0]const u8) !void {
-        // const drawSettings = self.drawSettings;
         const menuItem = try self.allocator.create(MenuItem);
         self.x = self.x + X_INDENT;
-        self.y = self.y + 5;
+        self.boundsCalc.padY();
+        const currentY = self.boundsCalc.getY();
         menuItem.* = @unionInit(MenuItem, @tagName(mu.UiElementType.GROUP_BOX), GroupBox{
             .props = du.CommonItemProps{
                 .name = name,
                 .itemBounds = rl.Rectangle{
                     .x = self.x,
-                    .y = self.y,
+                    .y = currentY,
                     .width = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2 - 2 * self.x,
                     .height = -1,
                 }
             }
         });
-        self.y = self.y + 5;
+        self.boundsCalc.padY();
         try self.groupBoxStack.append(menuItem);
     }
 
     pub fn endGroup(self: *Self) !void {
         const groupBox = self.groupBoxStack.pop();
         if (groupBox) |unwrapped| {
-            unwrapped.GROUP_BOX.props.itemBounds.height = self.y - unwrapped.GROUP_BOX.props.itemBounds.y;
-            self.y = self.y + self.drawSettings.height + self.drawSettings.paddingY;
+            const currentY = self.boundsCalc.getY();
+            unwrapped.GROUP_BOX.props.itemBounds.height = currentY - unwrapped.GROUP_BOX.props.itemBounds.y;
+            self.boundsCalc.padY();
             self.x = self.x - X_INDENT;
             try self.z0Items.append(unwrapped);
         } else {
@@ -84,7 +94,6 @@ pub const RayMenuWindowBuilder = struct {
     }
 
     pub fn addMenuItem(self: *Self, menuItem: MenuItem) !void {
-        const drawSettings = self.drawSettings;
         var needsLabel = true;
         switch (menuItem) {
             .LABEL => needsLabel = false,
@@ -99,54 +108,23 @@ pub const RayMenuWindowBuilder = struct {
         switch (ret.*) {
             .BUTTON => |*item| {
                 item.props.name = try self.allocator.dupeZ(u8, item.props.name);
-                item.props.itemBounds.height = 20;
-                item.props.itemBounds.width = drawSettings.width;
-                item.props.itemBounds.x = drawSettings.startX + self.x;
-                item.props.itemBounds.y = self.y;
+                item.props.itemBounds = self.boundsCalc.getItemBoundsWithHeight(self.x, self.drawSettings.buttonHeight);
+                self.boundsCalc.advanceYBy(self.drawSettings.buttonHeight);
+                self.boundsCalc.padY();
             },
             inline else => |*item| {
-                if (needsLabel) {
-                    item.props.nameBounds = rl.Rectangle{
-                        .width = drawSettings.width,
-                        .height = drawSettings.nameHeight,
-                        .x = drawSettings.startX + self.x,
-                        .y = self.y
-                    };
-                    self.y = self.y + drawSettings.nameHeight + drawSettings.namePadding;
-                }
-
+                item.props.nameBounds = self.boundsCalc.getNameBounds(self.x, needsLabel);
                 item.props.name = try self.allocator.dupeZ(u8, item.props.name);
-                item.props.itemBounds.height = drawSettings.height;
-                item.props.itemBounds.width = drawSettings.width;
-                item.props.itemBounds.x = drawSettings.startX + self.x;
-                item.props.itemBounds.y = self.y;
-                self.y = self.y + drawSettings.height + drawSettings.paddingY;
+                item.props.itemBounds = self.boundsCalc.getItemBounds(self.x);
+                self.boundsCalc.advanceY();
             },
         }
 
-        // const currentWidth = drawSettings.startX + drawSettings.width;
-        // if (currentWidth > self.maxWidth) self.maxWidth = currentWidth;
-        self.y = self.y + drawSettings.height + drawSettings.paddingY;
         try self.menuItems.append(ret);
     }
 
-    fn getEndOfConent(self: *Self) f32 {
-        var maxYz0Items: f32 = 0;
-        switch (self.z0Items.getLast().*) {
-            inline else => |*active| {
-                maxYz0Items = active.props.itemBounds.y + active.props.itemBounds.height;
-            }
-        }
-        var maxYMenuItem: f32 = 0;
-        switch (self.menuItems.getLast().*) {
-            inline else => |*active| {
-                maxYMenuItem = active.props.itemBounds.y + active.props.itemBounds.height;
-            }
-        }
-        return @as(f32, @max(maxYMenuItem, maxYz0Items));
-    }
     pub fn build(self: *Self) !du.Window {
-        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.getEndOfConent() };
+        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.boundsCalc.getY() };
         const size = rl.Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
 
         self.window.contentSize = contentSize;
@@ -193,21 +171,16 @@ pub const RayMenu = struct {
             const item = window.z0Items[i];
             switch(item.*) {
                 .GROUP_BOX => |active| {
-                    // std.debug.print("groupBox {any}", .{active});
-                    _ = rg.groupBox(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
+                    du.drawGroupBox(&active, position, scroll);
                 },
                 else => @panic("An unsupported menuItem type made it into z0items")
             }
         }
 
-
         for (window.menuItems) |menuItem| {
             switch(menuItem.*) {
                 .SLIDER => |active| {
-                    _ = rg.label(du.offsetRect(active.props.nameBounds, position, scroll), active.props.name);
-                    var buf: [64:0]u8 = undefined;
-                    const valueText = du.formatNumberLabel(&buf, active.valuePtr.*);
-                    _ = rg.slider(du.offsetRect(active.props.itemBounds, position, scroll), "", valueText, active.valuePtr, active.range.lower, active.range.upper);
+                    du.drawSlider(&active, position, scroll);
                 },
                 .VALUE_BOX => |_| {
                     std.debug.print("draw value\n", .{});
@@ -216,12 +189,10 @@ pub const RayMenu = struct {
                     std.debug.print("draw label\n", .{});
                 },
                 .LINE => |active| {
-                    _ = rg.line(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name);
+                    du.drawLine(&active, position, scroll);
                 },
                 .BUTTON => |active| {
-                    if (rg.button(du.offsetRect(active.props.itemBounds, position, scroll), active.props.name)) {
-                        active.buttonFn();
-                    }
+                    du.drawButton(&active, position, scroll);
                 },
                 else => unreachable
             }

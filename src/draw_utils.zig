@@ -201,6 +201,91 @@ pub fn drawNumberLabel(menuProperties: mu.MenuProperties, valuePtr: anytype, pos
     _ = rg.label(offsetRect(menuProperties.bounds, position, scroll), text);
 }
 
+pub fn drawSlider(slider: *const Slider, position: rl.Vector2, scroll: rl.Vector2) void {
+    _ = rg.label(offsetRect(slider.props.nameBounds, position, scroll), slider.props.name);
+    var buf: [64:0]u8 = undefined;
+    const valueText = formatNumberLabel(&buf, slider.valuePtr.*);
+    _ = rg.slider(offsetRect(slider.props.itemBounds, position, scroll), "", valueText, slider.valuePtr, slider.range.lower, slider.range.upper);
+}
+
+pub fn drawLine(line: *const Line, position: rl.Vector2, scroll: rl.Vector2) void {
+    _ = rg.line(offsetRect(line.props.itemBounds, position, scroll), line.props.name);
+}
+
+pub fn drawButton(button: *const Button, position: rl.Vector2, scroll: rl.Vector2) void {
+    if (rg.button(offsetRect(button.props.itemBounds, position, scroll), button.props.name)) {
+        button.buttonFn();
+    }
+}
+
+pub fn drawGroupBox(groupBox: *const GroupBox, position: rl.Vector2, scroll: rl.Vector2) void {
+    _ = rg.groupBox(offsetRect(groupBox.props.itemBounds, position, scroll), groupBox.props.name);
+}
+
+pub const BoundsCalculator = struct {
+    y: f32,
+    drawSettings: mu.DrawSettings,
+
+    pub fn init(drawSettings: mu.DrawSettings) BoundsCalculator {
+        return .{
+            .y = WINDOW_STATUS_BAR_HEIGHT + 4,
+            .drawSettings = drawSettings
+        };
+    }
+
+    pub fn getNameBounds(self: *BoundsCalculator, x_offset: f32, needsLabel: bool) rl.Rectangle {
+        if (!needsLabel) {
+            return rl.Rectangle{.height = 0, .width = 0, .x = 0, .y = 0};
+        }
+        const bounds = rl.Rectangle{
+            .width = self.drawSettings.width,
+            .height = self.drawSettings.nameHeight,
+            .x = self.drawSettings.startX + x_offset,
+            .y = self.y
+        };
+        self.y += self.drawSettings.nameHeight + self.drawSettings.namePadding;
+        return bounds;
+    }
+
+    pub fn getItemBounds(self: *BoundsCalculator, x_offset: f32) rl.Rectangle {
+        return rl.Rectangle{
+            .width = self.drawSettings.width,
+            .height = self.drawSettings.height,
+            .x = self.drawSettings.startX + x_offset,
+            .y = self.y
+        };
+    }
+
+    pub fn getItemBoundsWithHeight(self: *BoundsCalculator, x_offset: f32, height: f32) rl.Rectangle {
+        return rl.Rectangle{
+            .width = self.drawSettings.width,
+            .height = height,
+            .x = self.drawSettings.startX + x_offset,
+            .y = self.y
+        };
+    }
+
+    pub fn advanceY(self: *BoundsCalculator) void {
+        self.y += self.drawSettings.height + self.drawSettings.paddingY;
+    }
+
+    pub fn getY(self: *const BoundsCalculator) f32 {
+        return self.y;
+    }
+
+    pub fn setY(self: *BoundsCalculator, y: f32) void {
+        self.y = y;
+    }
+
+    pub fn advanceYBy(self: *BoundsCalculator, amount: f32) void {
+        self.y += amount;
+    }
+
+    pub fn padY(self: *BoundsCalculator) void {
+        self.y += self.drawSettings.paddingY;
+    }
+};
+
 
 pub const WINDOW_STATUS_BAR_HEIGHT = 24;
 const WINDOW_CLOSE_BUTTON_SIZE = 18;

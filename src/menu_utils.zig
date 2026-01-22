@@ -34,6 +34,7 @@ pub const DrawSettings = struct {
     paddingY: f32,
     nameHeight: f32,
     namePadding: f32,
+    buttonHeight: f32 = 20
 };
 
 pub const YamlMenuDef = struct {

@@ -5,6 +5,7 @@ drawSettings:
   height: 10
   nameHeight: 10
   namePadding: 0
+  buttonHeight: 20
 itemDefs:
   - elementType: SLIDER
     statePath: player.speed.x
