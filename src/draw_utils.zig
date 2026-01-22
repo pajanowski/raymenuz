@@ -224,6 +224,7 @@ pub fn drawGroupBox(groupBox: *const GroupBox, position: rl.Vector2, scroll: rl.
 
 pub const BoundsCalculator = struct {
     y: f32,
+    lastAdvancedAmount: f32 = 0,
     drawSettings: mu.DrawSettings,
 
     pub fn init(drawSettings: mu.DrawSettings) BoundsCalculator {
@@ -266,6 +267,7 @@ pub const BoundsCalculator = struct {
     }
 
     pub fn advanceY(self: *BoundsCalculator) void {
+        self.lastAdvancedAmount = self.drawSettings.height;
         self.y += self.drawSettings.height + self.drawSettings.paddingY;
     }
 
@@ -278,11 +280,16 @@ pub const BoundsCalculator = struct {
     }
 
     pub fn advanceYBy(self: *BoundsCalculator, amount: f32) void {
+        self.lastAdvancedAmount = amount;
         self.y += amount;
     }
 
     pub fn padY(self: *BoundsCalculator) void {
         self.y += self.drawSettings.paddingY;
+    }
+
+    pub fn unpadY(self: *BoundsCalculator) void {
+        self.y -= self.drawSettings.paddingY;
     }
 };
 

@@ -4,6 +4,7 @@ const du = @import("draw_utils.zig");
 const rl = @import("raylib");
 
 const MenuItem = du.MenuItem;
+pub const DrawSettings = mu.DrawSettings;
 
 pub const Slider = du.Slider;
 pub const ValueBox = du.ValueBox;
@@ -36,15 +37,9 @@ pub const RayMenuWindowBuilder = struct {
 
     const Self = @This();
 
-    pub fn init(title: []const u8, allocator: std.mem.Allocator) Self {
-        const drawSettings = mu.DrawSettings{
-            .paddingY = 5,
-            .startX = 5,
-            .width = 75,
-            .height = 10,
-            .nameHeight = 10,
-            .namePadding = 0
-        };
+    pub fn init(title: []const u8,
+        drawSettings: mu.DrawSettings,
+        allocator: std.mem.Allocator) Self {
        return Self{
            .menuItems = MenuItemListType.init(allocator),
            .z0Items = MenuItemListType.init(allocator),
@@ -124,7 +119,10 @@ pub const RayMenuWindowBuilder = struct {
     }
 
     pub fn build(self: *Self) !du.Window {
-        const contentSize = rl.Vector2{ .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2, .y = self.boundsCalc.getY() };
+        const contentSize = rl.Vector2{
+            .x = (self.drawSettings.startX + self.drawSettings.width + self.drawSettings.startX) * 2,
+            .y = self.boundsCalc.getY() - self.boundsCalc.lastAdvancedAmount
+        };
         const size = rl.Vector2{ .x = contentSize.x + 16, .y = contentSize.y + du.WINDOW_STATUS_BAR_HEIGHT + 8};
 
         self.window.contentSize = contentSize;

@@ -61,8 +61,17 @@ pub fn main() !void {
     const slider = rm.Slider.init("player x speed", raymenuz.mu.Range{.lower = 10, .upper = 20}, &state.player.speed.x);
     const slider2 = rm.Slider.init("player y speed", raymenuz.mu.Range{.lower = 10, .upper = 20}, &state.player.speed.y);
 
+    const drawSettings = rm.DrawSettings{
+        .paddingY = 5,
+        .startX = 5,
+        .width = 100,
+        .height = 10,
+        .nameHeight = 10,
+        .namePadding = 0
+    };
+
     var windowBuilder = rm.RayMenuWindowBuilder
-        .init("This is a test window", allocator);
+        .init("This is a test window",drawSettings,allocator);
     try windowBuilder.startGroup("Actors Group");
         try windowBuilder.startGroup("Player Group");
             try windowBuilder.addMenuItem(slider);
@@ -77,6 +86,8 @@ pub fn main() !void {
         const testButton2 = rm.Button.init("Test Button 2", buttonTest2);
         try windowBuilder.addMenuItem(testButton2);
     try windowBuilder.endGroup();
+
+    try windowBuilder.addMenuItem(testButton2);
 
     var window = try windowBuilder.build();
 
