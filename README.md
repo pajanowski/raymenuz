@@ -51,145 +51,47 @@ In your `build.zig`
 
 `RayMenuFromFile` allows you to define your menu in a YAML file and hot-reload it during development.
 
-```zig
-const std = @import("std");
-const rl = @import("raylib");
-const raymenuz = @import("raymenuz");
-const RayMenuFromFile = raymenuz.raymenu_from_file.RayMenuFromFile;
-
-pub const Player = struct {
-    speed: rl.Vector2,
-    // ...
-};
-
-pub const GameState = struct {
-    player: *Player
-};
-
-pub fn main() !void {
-    // ... raylib initialization ...
-    const allocator = std.heap.page_allocator;
-
-    var player = Player{ .speed = .{ .x = 2, .y = 2 } };
-    var state = GameState{ .player = &player };
-
-    var rayMenu = RayMenuFromFile(GameState).init(
-        "src/menu.yaml",
-        &state,
-        allocator
-    );
-
-    while (!rl.windowShouldClose()) { 
-        rl.beginDrawing();
-        defer rl.endDrawing();
-        rl.clearBackground(rl.Color.ray_white);
-        
-        rayMenu.draw();
-
-        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
-            rayMenu.reloadMenuItems() catch |err| {
-                std.log.err("Failed to reload menu items {any}", .{err});
-            };
-        }
-    }
-}
+[Example](src/examples/raymenu_from_file_example.zig)
+```zig:src/examples/raymenu_from_file_example.zig
 ```
 
 
-```yaml
-drawSettings:
-  paddingY: 5
-  startX: 25
-  width: 75
-  height: 10
-itemDefs:
-  - elementType: SLIDER
-    statePath: player.gravity
-    displayValuePrefix: Gravity
-    menuItemType: float
-    range:
-      upper: 0
-      lower: -400
-  - elementType: VALUE_BOX
-    statePath: player.xSpeed
-    displayValuePrefix: X Speed
-    menuItemType: int
-    range:
-      upper: 1000
-      lower: 0
-  - elementType: LABEL
-    statePath: player.vel.y
-    displayValuePrefix: Vel Y
-    menuItemType: float
-    range:
-      upper: -1
-      lower: -1
+[Example YAML](src/examples/menu.yaml)
+```yaml:src/examples/menu.yaml
 ```
-
-There is also a working example in [src/main.zig](src/examples/raymenu_from_file_example.zig).
 
 ### Usage (Manual)
 
 `RayMenu` and `RayMenuWindowBuilder` allow you to create menus programmatically in Zig code.
 
-```zig
-const std = @import("std");
-const rl = @import("raylib");
-const raymenuz = @import("raymenuz");
-const rm = raymenuz.raymenu;
-
-pub fn main() !void {
-    // ... raylib initialization ...
-    const allocator = std.heap.page_allocator;
-
-    var speed: f32 = 5.0;
-
-    const slider = rm.Slider.init("Speed", raymenuz.mu.Range{.lower = 0, .upper = 10}, &speed);
-    const button = rm.Button.init("Reset", resetCallback);
-
-    var windowBuilder = rm.RayMenuWindowBuilder.init("Dev Menu", allocator);
-    try windowBuilder.startGroup("Player Settings");
-      try windowBuilder.addMenuItem(slider);
-    try windowBuilder.endGroup();
-    try windowBuilder.addMenuItem(button);
-    
-    var window = try windowBuilder.build();
-
-    var rayMenu = rm.RayMenu.init(allocator);
-    try rayMenu.addWindow(&window);
-
-    while (!rl.windowShouldClose()) {
-        rl.beginDrawing();
-        defer rl.endDrawing();
-        rl.clearBackground(rl.Color.ray_white);
-
-        rayMenu.draw();
-    }
-}
+[Example](src/examples/raymenu_example.zig)
+```zig:src/examples/raymenu_example.zig
 ```
-
 
 - - - 
 ### Menu Definition
 
-#### drawSettings &rarr; DrawSettings defined in [raymenuutils.zig](src/menu_utils.zig)
-| Field    | Description                                                                                                        | Allowed Values |
-|:---------|:-------------------------------------------------------------------------------------------------------------------|:---------------|
-| paddingY | Vertical space between elements                                                                                    | Any integer    |
-| startX   | Horizontal space between left side of screen and elements this does not account for text in the displayValuePrefix | Any integer    | 
-| width    | Width of elements                                                                                                  | Any integer    | 
-| height   | Height of elements                                                                                                 | Any integer    | 
+#### drawSettings &rarr; DrawSettings defined in [menu_utils.zig](src/menu_utils.zig)
+| Field                  | Description                                                                                                        | Allowed Values |
+|:-----------------------|:-------------------------------------------------------------------------------------------------------------------|:---------------|
+| paddingY               | Vertical space between elements                                                                                    | Any integer    |
+| startX                 | Horizontal space between left side of screen and elements this does not account for text in the displayValuePrefix | Any integer    | 
+| width                  | Width of elements                                                                                                  | Any integer    | 
+| height                 | Height of elements                                                                                                 | Any integer    | 
+| buttonHeight           | Height of buttons                                                                                                 | Any integer    |
+| checkboxSize           | Size of checkboxes                                                                                                | Any integer    |
+| toggleGroupButtonWidth | Width of buttons in a toggle group                                                                                 | Any integer    |
 
-#### itemDefs, list of YamlItemDef defined in [raymenuutils.zig](src/menu_utils.zig)
+#### itemDefs, list of YamlItemDef defined in [menu_utils.zig](src/menu_utils.zig)
 | Field              | Description                                                                                               | Allowed Values                                     |
 |:-------------------|:----------------------------------------------------------------------------------------------------------|:---------------------------------------------------|
 | elementType        | Element type                                                                                              | SLIDER, VALUE_BOX, LABEL                           |
 | statePath          | Path in provided state value                                                                              | Any string that maps to a value in the struct type | 
 | displayValuePrefix | The label displayed to the left of the element                                                            | Any String                                         | 
-| menuItemType       | Type of value at statePath, currently float(f16-32), int(i8-32), and string([]const u8) are only supporte | float, int, string                                 | 
+| menuItemType       | Type of value at statePath, currently float, int, and string are only supported | float, int, string                                 | 
 | range              | Range for number based elements                                                                           | Valid struct definition                            | 
 
-#### range, Range defined in [raymenuutils.zig](src/menu_utils.zig)
+#### range, Range defined in [menu_utils.zig](src/menu_utils.zig)
 While only used for number-based elements, it is still required for all elements for the sake of parsing and memory alignment.
 
 | Field | Description | Allowed Values               |
@@ -202,24 +104,26 @@ While only used for number-based elements, it is still required for all elements
 | Element          | File Defined Status | Manually Defined Status | File Defined elementType value | File Defined Supported menuItemType |
 |:-----------------|:--------------------|-------------------------|--------------------------------|:------------------------------------|
 | **Slider**       | Supported           | Supported               | `SLIDER`                       | `float`                             |
-| **ValueBox**     | Supported           | Planned                 | `VALUE_BOX`                    | `int`                               |
-| **Label**        | Supported           | Planned                 | `LABEL`                        | `int`, `float`, `string`            |
-| **Button**       | Planned             | Supported               |                                | -                                   |
-| **TextBox**      | Planned             |                         |                                | -                                   |
-| **SliderBar**    | Planned             |                         |                                | -                                   |
-| **ProgressBar**  | Planned             |                         |                                | -                                   |
-| **StatusBar**    | Planned             |                         |                                | -                                   |
-| **CheckBox**     | Planned             |                         |                                | -                                   |
-| **LabelButton**  | Planned             |                         |                                | -                                   |
-| **Toggle**       | Needs Consideration |                         |                                | -                                   |
-| **ToggleGroup**  | Needs Consideration |                         |                                | -                                   |
-| **ToggleSlider** | Needs Consideration |                         |                                | -                                   |
-| **ComboBox**     | Needs Consideration |                         |                                | -                                   |
-| **DropdownBox**  | Needs Consideration |                         |                                | -                                   |
-| **Spinner**      | Needs Consideration |                         |                                | -                                   |
-| **DummyRec**     | Needs Consideration |                         |                                | -                                   |
-| **Grid**         | Needs Consideration |                         |                                | -                                   |
-| **GroupBox**     | Needs Consideration | Supported               |                                | -                                   |
+| **ValueBox**     | Supported           | Supported               | `VALUE_BOX`                    | `int`                               |
+| **Label**        | Supported           | Supported               | `LABEL`                        | `int`, `float`, `string`            |
+| **Button**       | Supported           | Supported               |                                | -                                   |
+| **LabelButton**  | Supported           | Supported               |                                | -                                   |
+| **CheckBox**     | Supported           | Supported               |                                | -                                   |
+| **Toggle**       | Supported           | Supported               |                                | -                                   |
+| **ToggleGroup**  | Supported           | Supported               |                                | -                                   |
+| **ToggleSlider** | Supported           | Supported               |                                | -                                   |
+| **ComboBox**     | Supported           | Supported               |                                | -                                   |
+| **DropdownBox**  | Supported           | Supported               |                                | -                                   |
+| **TextBox**      | Supported           | Supported               |                                | -                                   |
+| **Spinner**      | Supported           | Supported               |                                | -                                   |
+| **SliderBar**    | Supported           | Supported               |                                | -                                   |
+| **ProgressBar**  | Supported           | Supported               |                                | -                                   |
+| **StatusBar**    | Supported           | Supported               |                                | -                                   |
+| **DummyRec**     | Supported           | Supported               |                                | -                                   |
+| **Grid**         | Supported           | Supported               |                                | -                                   |
+| **Line**         | Supported           | Supported               |                                | -                                   |
+| **GroupBox**     | Supported           | Supported               |                                | -                                   |
+| **Window**       | Supported           | Supported               | -                              | -                                   |
  - - -
 ### Known Errors
 Error handling improvements will be made for errors that happen outside of this library, better error handling, more specific log messages, etc.
@@ -242,10 +146,10 @@ Error handling improvements will be made for errors that happen outside of this 
 ### Contributing
 Please create an issue before putting up a pull request.
 
-This library is also fairly small. Akdding new elementTypes for the existing menuItemTypes should be fairly straight forward and maybe qualify as a good first issue.
-1. Add a `draw(rayguiElement)` in RayMenu
-2. Add the new element type to the UiElementType enum in `raymenuutils.zig`
-3. Add a corresponding branch to `draw(menuItemType)Elements`
+This library is also fairly small. Adding new elementTypes for the existing menuItemTypes should be fairly straight forward and maybe qualify as a good first issue.
+1. Add a `draw(rayguiElement)` in `draw_utils.zig`
+2. Add the new element type to the `UiElementType` enum in `menu_utils.zig`
+3. Add a corresponding branch to `draw(menuItemType)Elements` in `draw_utils.zig`
 - - -
 - ### Motivation
 I wanted a developer menu, DearImgUi, microui, etc., for every raylib project I started, but I always found it difficult
