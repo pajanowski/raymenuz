@@ -19,6 +19,8 @@ const Player = struct {
     dropdownEdit: bool,
     textboxEdit: bool,
     spinnerEdit: bool,
+    scoreDisplay: i32,
+    musicToggle: i32,
     nameBuffer: [64:0]u8,
     mouseCell: rl.Vector2,
     const Self = @This();
@@ -45,8 +47,10 @@ const Player = struct {
             .difficulty = 1,
             .weapon = 0,
             .dropdownEdit = false,
-            .textboxEdit = false,
-            .spinnerEdit = false,
+            .textboxEdit = true,
+            .spinnerEdit = true,
+            .scoreDisplay = 0,
+            .musicToggle = 0,
             .nameBuffer = std.mem.zeroes([64:0]u8),
             .mouseCell = rl.Vector2{.x = 0, .y = 0}
         };
@@ -110,8 +114,7 @@ pub fn main() !void {
         const labelButton = rm.LabelButton.init("Label Button", buttonTest2);
         try windowBuilder.addMenuItem(labelButton);
 
-        // Line separator
-        const line1 = rm.Line.init("---");
+        const line1 = rm.Line.init("This is a line");
         try windowBuilder.addMenuItem(line1);
 
         // Toggle
@@ -171,11 +174,11 @@ pub fn main() !void {
         try windowBuilder.addMenuItem(weaponDropdown);
 
         // ToggleGroup
-        const scoreToggle = rm.ToggleGroup.init("Score Display", "Off;Small;Large", &player.score);
+        const scoreToggle = rm.ToggleGroup.init("Score Display", "Off;Small;Large", &player.scoreDisplay);
         try windowBuilder.addMenuItem(scoreToggle);
 
         // ToggleSlider
-        const toggleSlider = rm.ToggleSlider.init("Music", &player.score);
+        const toggleSlider = rm.ToggleSlider.init("Music", "ON;OFF", &player.musicToggle);
         try windowBuilder.addMenuItem(toggleSlider);
     try windowBuilder.endGroup();
 

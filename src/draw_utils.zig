@@ -422,11 +422,13 @@ pub const ToggleGroup = struct {
 pub const ToggleSlider = struct {
     props: CommonItemProps,
     activePtr: *i32,
+    items: [:0]const u8, // semicolon-separated items
 
     const Self = @This();
 
     pub fn init(
         name: [:0]const u8,
+        items: [:0]const u8,
         activePtr: *i32
     ) MenuItem {
         return MenuItem{
@@ -434,6 +436,7 @@ pub const ToggleSlider = struct {
                 .props = CommonItemProps{
                     .name = name
                 },
+                .items = items,
                 .activePtr = activePtr
             }
         };
@@ -531,9 +534,16 @@ pub fn formatNumberLabel(buf: []u8, value: anytype) [:0]const u8 {
 }
 
 pub fn offsetRect(rect: rl.Rectangle, position: rl.Vector2, scroll: rl.Vector2) rl.Rectangle {
+    // Clamp values to prevent float-to-int overflow in raygui
+    const max_coord: f32 = 2000000000.0; // Safe value well below i32 max
+    const min_coord: f32 = -2000000000.0;
+
+    const x = @min(@max(rect.x + position.x + scroll.x, min_coord), max_coord);
+    const y = @min(@max(rect.y + position.y + scroll.y, min_coord), max_coord);
+
     return rl.Rectangle {
-        .x = rect.x + position.x + scroll.x,
-        .y = rect.y + position.y + scroll.y,
+        .x = x,
+        .y = y,
         .width = rect.width,
         .height = rect.height
     };
@@ -581,7 +591,14 @@ pub fn drawSlider(slider: *const Slider, position: rl.Vector2, scroll: rl.Vector
 
 pub fn drawValueBoxElement(valueBox: *const ValueBox, position: rl.Vector2, scroll: rl.Vector2) void {
     _ = rg.label(offsetRect(valueBox.props.nameBounds, position, scroll), valueBox.props.name);
-    _ = rg.valueBox(offsetRect(valueBox.props.itemBounds, position, scroll), "", valueBox.valuePtr, @intFromFloat(valueBox.range.lower), @intFromFloat(valueBox.range.upper), false);
+    _ = rg.valueBox(
+        offsetRect(valueBox.props.itemBounds, position, scroll),
+        "",
+        valueBox.valuePtr,
+        @intFromFloat(valueBox.range.lower),
+        @intFromFloat(valueBox.range.upper),
+        true
+    );
 }
 
 pub fn drawLabelElement(label: *const Label, position: rl.Vector2, scroll: rl.Vector2) void {
@@ -626,7 +643,9 @@ pub fn drawComboBox(comboBox: *const ComboBox, position: rl.Vector2, scroll: rl.
 
 pub fn drawDropdownBox(dropdownBox: *const DropdownBox, position: rl.Vector2, scroll: rl.Vector2) void {
     _ = rg.label(offsetRect(dropdownBox.props.nameBounds, position, scroll), dropdownBox.props.name);
-    _ = rg.dropdownBox(offsetRect(dropdownBox.props.itemBounds, position, scroll), dropdownBox.items, dropdownBox.activePtr, dropdownBox.editModePtr.*);
+    if(rg.dropdownBox(offsetRect(dropdownBox.props.itemBounds, position, scroll), dropdownBox.items, dropdownBox.activePtr, dropdownBox.editModePtr.*) > 0) {
+        dropdownBox.editModePtr.* = !dropdownBox.editModePtr.*;
+    }
 }
 
 pub fn drawTextBox(textBox: *const TextBox, position: rl.Vector2, scroll: rl.Vector2) void {
@@ -664,7 +683,7 @@ pub fn drawToggleGroup(toggleGroup: *const ToggleGroup, position: rl.Vector2, sc
 
 pub fn drawToggleSlider(toggleSlider: *const ToggleSlider, position: rl.Vector2, scroll: rl.Vector2) void {
     _ = rg.label(offsetRect(toggleSlider.props.nameBounds, position, scroll), toggleSlider.props.name);
-    _ = rg.toggleSlider(offsetRect(toggleSlider.props.itemBounds, position, scroll), "", toggleSlider.activePtr);
+    _ = rg.toggleSlider(offsetRect(toggleSlider.props.itemBounds, position, scroll), toggleSlider.items, toggleSlider.activePtr);
 }
 
 pub fn drawDummyRec(dummyRec: *const DummyRec, position: rl.Vector2, scroll: rl.Vector2) void {
@@ -714,6 +733,24 @@ pub const BoundsCalculator = struct {
         return rl.Rectangle{
             .width = self.drawSettings.width,
             .height = height,
+            .x = self.drawSettings.startX + x_offset,
+            .y = self.y
+        };
+    }
+
+    pub fn getItemBoundsPro(self: *BoundsCalculator, x_offset: f32, height: f32, width: f32) rl.Rectangle {
+        return rl.Rectangle{
+            .width = width,
+            .height = height,
+            .x = self.drawSettings.startX + x_offset,
+            .y = self.y
+        };
+    }
+
+    pub fn getSquareItemBounds(self: *BoundsCalculator, x_offset: f32, side: f32) rl.Rectangle {
+        return rl.Rectangle{
+            .width = side,
+            .height = side,
             .x = self.drawSettings.startX + x_offset,
             .y = self.y
         };

@@ -50,7 +50,9 @@ pub const DrawSettings = struct {
     paddingY: f32,
     nameHeight: f32,
     namePadding: f32,
-    buttonHeight: f32 = 20
+    buttonHeight: f32 = 20,
+    checkboxSize: f32 = 10,
+    toggleGroupButtonWidth: f32 = 45
 };
 
 pub const YamlMenuDef = struct {

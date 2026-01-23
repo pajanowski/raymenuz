@@ -6,6 +6,8 @@ drawSettings:
   nameHeight: 10
   namePadding: 0
   buttonHeight: 20
+  checkboxSize: 10
+  toggleGroupButtonWidth: 45
 itemDefs:
   - elementType: SLIDER
     statePath: player.speed.x
