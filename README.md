@@ -49,29 +49,27 @@ In your `build.zig`
 - - - 
 ### Usage (File defined)
 
-`RayMenuFromFile` allows you to define your menu in a YAML file and hot-reload it during development.
+`RayMenuFromFile` allows you to define your menu in a YAML file and hot-reload it during development. 
+
 [Example](src/examples/raymenu_from_file_example.zig)
-```zig:src/examples/raymenu_from_file_example.zig
-```
+```zig
+var rayMenu = RayMenuFromFile(GameState).init(
+    "src/menu.yaml",
+    &state,
+    allocator
+);
 
-    var rayMenu = RayMenuFromFile(GameState).init(
-        "src/menu.yaml",
-        &state,
-        allocator
-    );
+while (!rl.windowShouldClose()) { 
+    rl.beginDrawing();
+    defer rl.endDrawing();
+    rl.clearBackground(rl.Color.ray_white);
+    
+    rayMenu.draw();
 
-    while (!rl.windowShouldClose()) { 
-        rl.beginDrawing();
-        defer rl.endDrawing();
-        rl.clearBackground(rl.Color.ray_white);
-        
-        rayMenu.draw();
-
-        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
-            rayMenu.reloadMenuItems() catch |err| {
-                std.log.err("Failed to reload menu items {any}", .{err});
-            };
-        }
+    if (rl.isKeyPressed(rl.KeyboardKey.r)) {
+        rayMenu.reloadMenuItems() catch |err| {
+            std.log.err("Failed to reload menu items {any}", .{err});
+        };
     }
 }
 ```
