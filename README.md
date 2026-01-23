@@ -50,22 +50,130 @@ In your `build.zig`
 ### Usage (File defined)
 
 `RayMenuFromFile` allows you to define your menu in a YAML file and hot-reload it during development.
-
 [Example](src/examples/raymenu_from_file_example.zig)
 ```zig:src/examples/raymenu_from_file_example.zig
 ```
 
+    var rayMenu = RayMenuFromFile(GameState).init(
+        "src/menu.yaml",
+        &state,
+        allocator
+    );
+
+    while (!rl.windowShouldClose()) { 
+        rl.beginDrawing();
+        defer rl.endDrawing();
+        rl.clearBackground(rl.Color.ray_white);
+        
+        rayMenu.draw();
+
+        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
+            rayMenu.reloadMenuItems() catch |err| {
+                std.log.err("Failed to reload menu items {any}", .{err});
+            };
+        }
+    }
+}
+```
 
 [Example YAML](src/examples/menu.yaml)
-```yaml:src/examples/menu.yaml
+```yaml
+drawSettings:
+  paddingY: 5
+  startX: 25
+  width: 75
+  height: 10
+itemDefs:
+  - elementType: SLIDER
+    statePath: player.gravity
+    displayValuePrefix: Gravity
+    menuItemType: float
+    range:
+      upper: 0
+      lower: -400
+  - elementType: VALUE_BOX
+    statePath: player.xSpeed
+    displayValuePrefix: X Speed
+    menuItemType: int
+    range:
+      upper: 1000
+      lower: 0
+  - elementType: LABEL
+    statePath: player.vel.y
+    displayValuePrefix: Vel Y
+    menuItemType: float
+    range:
+      upper: -1
+      lower: -1
 ```
+
+There is also a working example in [src/examples/raymenu_from_file_example.zig](src/examples/raymenu_from_file_example.zig).
 
 ### Usage (Manual)
 
 `RayMenu` and `RayMenuWindowBuilder` allow you to create menus programmatically in Zig code.
 
 [Example](src/examples/raymenu_example.zig)
-```zig:src/examples/raymenu_example.zig
+```zig
+  var windowBuilder = rm.RayMenuWindowBuilder.init("raygui Elements Demo", drawSettings, allocator);
+
+  // Basic Controls Group
+  try windowBuilder.startGroup("Basic Controls");
+      // Button
+      const testButton = rm.Button.init("Click Me!", buttonTest);
+      try windowBuilder.addMenuItem(testButton);
+
+      // LabelButton
+      const labelButton = rm.LabelButton.init("Label Button", buttonTest2);
+      try windowBuilder.addMenuItem(labelButton);
+
+      const line1 = rm.Line.init("This is a line");
+      try windowBuilder.addMenuItem(line1);
+
+      // Toggle
+      const toggle = rm.Toggle.init("Enable Player", &player.enabled);
+      try windowBuilder.addMenuItem(toggle);
+
+      // CheckBox
+      const checkbox = rm.CheckBox.init("God Mode", &player.godMode);
+      try windowBuilder.addMenuItem(checkbox);
+  try windowBuilder.endGroup();
+
+  // Sliders & Progress Group
+  try windowBuilder.startGroup("Sliders & Progress");
+      // Slider
+      const speedSlider = rm.Slider.init("Speed X", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.x);
+      try windowBuilder.addMenuItem(speedSlider);
+
+      const speedSlider2 = rm.Slider.init("Speed Y", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.y);
+      try windowBuilder.addMenuItem(speedSlider2);
+
+      // SliderBar
+      const healthSlider = rm.SliderBar.init("Health", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
+      try windowBuilder.addMenuItem(healthSlider);
+
+      // ProgressBar
+      const healthProgress = rm.ProgressBar.init("HP Bar", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
+      try windowBuilder.addMenuItem(healthProgress);
+  try windowBuilder.endGroup();
+
+  var window = try windowBuilder.build();
+  var rayMenu = rm.RayMenu.init(allocator);
+  try rayMenu.addWindow(&window);
+
+  while (!rl.windowShouldClose())
+  {
+      // Update
+     
+      // Draw
+      rl.beginDrawing();
+      defer rl.endDrawing();
+
+      rl.clearBackground(rl.Color.dark_gray);
+
+      // Draw menu
+      rayMenu.draw();
+  }
 ```
 
 - - - 
