@@ -792,6 +792,7 @@ const MIN_WINDOW_SIZE = 100;
 const DrawContentFn = *const fn(wo: *Window) void;
 
 pub const Window = struct {
+    id: u32 = 0,
     title: []const u8,
     position: rl.Vector2 = undefined,
     size: rl.Vector2 = undefined,
@@ -804,6 +805,9 @@ pub const Window = struct {
     user_data: ?*anyopaque = null,
     menuItems: []*MenuItem = undefined,
     z0Items: []*MenuItem = undefined,
+    enabled: bool = false,
+    guiState: rg.State = rg.State.disabled,
+    dirty: bool = true,
 
     const Self = @This();
 };
@@ -814,7 +818,7 @@ pub fn floatingWindow(wo: *Window) void {
     const mouse_position = rl.getMousePosition();
 
     const is_left_pressed = rl.isMouseButtonPressed(rl.MouseButton.left);
-    if(is_left_pressed and !(wo.moving) and !(wo.resizing)) {
+    if(is_left_pressed and !(wo.moving) and !(wo.resizing) and wo.enabled) {
 
         const title_collsion_rect = rl.Rectangle{.x = wo.position.x, .y = wo.position.y, .width = wo.size.x - WINDOW_CLOSE_BUTTON_SIZE - CLOSE_TITLE_SIZE_DELTA_HALF, .height = WINDOW_STATUS_BAR_HEIGHT};
         const resize_collision_rect = rl.Rectangle{.x = wo.position.x + wo.size.x - 20, .y = wo.position.y + wo.size.y - 20, .width = 20, .height = 20};
@@ -832,6 +836,7 @@ pub fn floatingWindow(wo: *Window) void {
     const screen_height_f32 = @as(f32, @floatFromInt(screen_height));
     // window movement and resize update
     if(wo.moving) {
+        wo.dirty = true;
         const mouse_delta = rl.getMouseDelta();
         wo.position.x += mouse_delta.x;
         wo.position.y += mouse_delta.y;
@@ -851,6 +856,7 @@ pub fn floatingWindow(wo: *Window) void {
             }
         }
     } else if(wo.resizing) {
+        wo.dirty = true;
         if (mouse_position.x > wo.position.x) {
             wo.size.x = mouse_position.x - wo.position.x;
         }
@@ -902,6 +908,10 @@ pub fn floatingWindow(wo: *Window) void {
             rl.beginScissorMode(@intFromFloat(scissor.x), @intFromFloat(scissor.y), @intFromFloat(scissor.width), @intFromFloat(scissor.height));
         }
 
+        if (!wo.enabled) {
+            rg.disable();
+        }
+        defer rg.enable();
         wo.drawContent(wo);
 
         if(require_scissor) {

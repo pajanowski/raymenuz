@@ -103,6 +103,7 @@ pub fn main() !void {
     };
 
     var windowBuilder = rm.RayMenuWindowBuilder.init("raygui Elements Demo", drawSettings, allocator);
+    var windowBuilder2 = rm.RayMenuWindowBuilder.init("Window 2", drawSettings, allocator);
 
     // Basic Controls Group
     try windowBuilder.startGroup("Basic Controls");
@@ -183,23 +184,26 @@ pub fn main() !void {
     try windowBuilder.endGroup();
 
     // Utility Elements Group
-    try windowBuilder.startGroup("Utility Elements");
+    try windowBuilder2.startGroup("Utility Elements");
         // StatusBar
         const status = rm.StatusBar.init("Status: Ready");
-        try windowBuilder.addMenuItem(status);
+        try windowBuilder2.addMenuItem(status);
 
         // DummyRec
         const dummy = rm.DummyRec.init("Dummy Rectangle");
-        try windowBuilder.addMenuItem(dummy);
+        try windowBuilder2.addMenuItem(dummy);
 
         // Grid
         const grid = rm.Grid.init("Grid", 10, 3, &player.mouseCell);
-        try windowBuilder.addMenuItem(grid);
-    try windowBuilder.endGroup();
+        try windowBuilder2.addMenuItem(grid);
+    try windowBuilder2.endGroup();
 
     var window = try windowBuilder.build();
+    var window2 = try windowBuilder2.build();
     var rayMenu = rm.RayMenu.init(allocator);
+    try rayMenu.addWindow(&window2);
     try rayMenu.addWindow(&window);
+    rayMenu.build();
 
     while (!rl.windowShouldClose())
     {

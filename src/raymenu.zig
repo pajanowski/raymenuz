@@ -2,6 +2,7 @@ const std = @import("std");
 const mu = @import("menu_utils.zig");
 const du = @import("draw_utils.zig");
 const rl = @import("raylib");
+const rg = @import("raygui");
 
 const MenuItem = du.MenuItem;
 
@@ -186,26 +187,113 @@ pub const RayMenuWindowBuilder = struct {
 
 pub const RayMenu = struct {
 
+    const WindowToCollisionType = std.AutoHashMap(u32, std.array_list.Managed(*rl.Rectangle));
+
     allocator: std.mem.Allocator,
     windows: std.array_list.Managed(*du.Window),
+    // a map to track the rects of a window that might be convering up
+    windowToCollisions: WindowToCollisionType,
+    nextWindowId: u32 = 1,
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self {
             .allocator = allocator,
-            .windows = std.array_list.Managed(*du.Window).init(allocator)
+            .windows = std.array_list.Managed(*du.Window).init(allocator),
+            .windowToCollisions = WindowToCollisionType.init(allocator)
         };
     }
 
+    pub fn build(self: *Self) void {
+        self.windows.getLast().enabled = true;
+    }
+
     pub fn addWindow(self: *Self, window: *du.Window) !void {
-       try self.windows.append(window);
+        window.id = self.nextWindowId;
+        try self.windowToCollisions.put(window.id, std.array_list.Managed(*rl.Rectangle).init(self.allocator));
+        self.nextWindowId += 1;
+        try self.windows.append(window);
+    }
+
+    fn updateCollisionRecs(self: *Self) !void {
+        var i: isize = @as(isize, @intCast(self.windows.items.len - 1));
+        while (i >= 0): (i-= 1) {
+            const above = self.windows.items[@intCast(i)];
+
+            const aboveRec = sizeAndPosToRect(above.size, above.position);
+
+            var j: isize = i - 1;
+            while(j >= 0) : (j -= 1) {
+                const below = self.windows.items[@intCast(j)];
+                // if (below.dirty) {
+                    const belowRec = sizeAndPosToRect(below.size, below.position);
+                    var it = self.windowToCollisions.valueIterator();
+                    while (it.next()) |recs| {
+                        for (recs.items) |rec| {
+                            self.allocator.destroy(rec);
+                        }
+                        recs.clearRetainingCapacity();
+                    }
+                    if (rl.checkCollisionRecs(aboveRec, belowRec)) {
+                        const ret = try self.allocator.create(rl.Rectangle);
+                        ret.* = rl.getCollisionRec(aboveRec, belowRec);
+                        try self.windowToCollisions.getPtr(below.id).?.append(ret);
+                    }
+                // }
+                // below.dirty = false;
+            }
+            // above.dirty = false;
+        }
+
+    }
+
+    inline fn sizeAndPosToRect(size: rl.Vector2, pos: rl.Vector2) rl.Rectangle {
+       return rl.Rectangle{.x = pos.x, .y = pos.y, .height = size.y, .width = size.x};
+    }
+
+    pub fn updateFocus(self: *Self) !void {
+        const mousePos = rl.getMousePosition();
+
+        var focusedWindowIndex: usize = self.windows.items.len - 1;
+        for (self.windows.items, 0..) |window, index| {
+            window.enabled = false;
+            if (rl.checkCollisionPointRec(mousePos, sizeAndPosToRect(window.size, window.position))) {
+                const coveredParts = self.windowToCollisions.getPtr(window.id).?;
+                var isFocused = true;
+                for (coveredParts.items) |covered| {
+                    if (rl.checkCollisionPointRec(mousePos, covered.*)) {
+                        isFocused = false;
+                    }
+                }
+                if (isFocused) {
+                    focusedWindowIndex = index;
+                }
+            }
+        }
+        const focused = self.windows.orderedRemove(focusedWindowIndex);
+        focused.enabled = true;
+        try self.windows.append(focused);
     }
 
     pub fn draw(self: *Self) void {
+        self.updateCollisionRecs() catch |err| {
+            std.log.err("Failed to update collision recs {any}", .{err});
+            @panic("failed updating collsionRecs");
+        };
+        self.updateFocus() catch |err| {
+            std.log.err("Failed to update focus {any}", .{err});
+            @panic("failed updating collsionRecs");
+        };
         for (self.windows.items) |window| {
             du.floatingWindow(window);
         }
+        // var it = self.windowToCollisions.valueIterator();
+        // while(it.next()) |collisionArrays| {
+            // for (collisionArrays.items) |collision| {
+                // rl.drawRectangleRec(collision.*, rl.Color.red);
+            // }
+        // }
     }
 
     fn drawZ1Elements(window: *du.Window) void {
