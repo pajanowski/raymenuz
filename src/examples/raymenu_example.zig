@@ -104,6 +104,7 @@ pub fn main() !void {
 
     var windowBuilder = rm.RayMenuWindowBuilder.init("raygui Elements Demo", drawSettings, allocator);
     var windowBuilder2 = rm.RayMenuWindowBuilder.init("Window 2", drawSettings, allocator);
+    var windowBuilder3 = rm.RayMenuWindowBuilder.init("Window 3", drawSettings, allocator);
 
     // Basic Controls Group
     try windowBuilder.startGroup("Basic Controls");
@@ -128,60 +129,60 @@ pub fn main() !void {
     try windowBuilder.endGroup();
 
     // Sliders & Progress Group
-    try windowBuilder.startGroup("Sliders & Progress");
+    try windowBuilder2.startGroup("Sliders & Progress");
         // Slider
         const speedSlider = rm.Slider.init("Speed X", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.x);
-        try windowBuilder.addMenuItem(speedSlider);
+        try windowBuilder2.addMenuItem(speedSlider);
 
         const speedSlider2 = rm.Slider.init("Speed Y", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.y);
-        try windowBuilder.addMenuItem(speedSlider2);
+        try windowBuilder2.addMenuItem(speedSlider2);
 
         // SliderBar
         const healthSlider = rm.SliderBar.init("Health", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
-        try windowBuilder.addMenuItem(healthSlider);
+        try windowBuilder2.addMenuItem(healthSlider);
 
         // ProgressBar
         const healthProgress = rm.ProgressBar.init("HP Bar", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
-        try windowBuilder.addMenuItem(healthProgress);
-    try windowBuilder.endGroup();
+        try windowBuilder2.addMenuItem(healthProgress);
+    try windowBuilder2.endGroup();
 
     // Value Inputs Group
-    try windowBuilder.startGroup("Value Inputs");
+    try windowBuilder3.startGroup("Value Inputs");
         // ValueBox (editable integer)
         const scoreValue = rm.ValueBox.init("Score", raymenuz.mu.Range{.lower = 0, .upper = 9999}, &player.score);
-        try windowBuilder.addMenuItem(scoreValue);
+        try windowBuilder3.addMenuItem(scoreValue);
 
         // Spinner
         const levelSpinner = rm.Spinner.init("Level", raymenuz.mu.Range{.lower = 1, .upper = 99}, &player.level, &player.spinnerEdit);
-        try windowBuilder.addMenuItem(levelSpinner);
+        try windowBuilder3.addMenuItem(levelSpinner);
 
         // TextBox
         const nameInput = rm.TextBox.init("Name", &player.nameBuffer, 64, &player.textboxEdit);
-        try windowBuilder.addMenuItem(nameInput);
+        try windowBuilder3.addMenuItem(nameInput);
 
         // Label (read-only display)
         const weaponLabel = rm.Label.init("Current Weapon ID", &player.weapon);
-        try windowBuilder.addMenuItem(weaponLabel);
-    try windowBuilder.endGroup();
+        try windowBuilder3.addMenuItem(weaponLabel);
+    try windowBuilder3.endGroup();
 
     // Selection Controls Group
-    try windowBuilder.startGroup("Selection Controls");
+    try windowBuilder2.startGroup("Selection Controls");
         // ComboBox
         const difficultyCombo = rm.ComboBox.init("Difficulty", "Easy;Normal;Hard;Insane", &player.difficulty);
-        try windowBuilder.addMenuItem(difficultyCombo);
+        try windowBuilder2.addMenuItem(difficultyCombo);
 
         // DropdownBox
         const weaponDropdown = rm.DropdownBox.init("Weapon", "Sword;Bow;Staff;Axe", &player.weapon, &player.dropdownEdit);
-        try windowBuilder.addMenuItem(weaponDropdown);
+        try windowBuilder2.addMenuItem(weaponDropdown);
 
         // ToggleGroup
         const scoreToggle = rm.ToggleGroup.init("Score Display", "Off;Small;Large", &player.scoreDisplay);
-        try windowBuilder.addMenuItem(scoreToggle);
+        try windowBuilder2.addMenuItem(scoreToggle);
 
         // ToggleSlider
         const toggleSlider = rm.ToggleSlider.init("Music", "ON;OFF", &player.musicToggle);
-        try windowBuilder.addMenuItem(toggleSlider);
-    try windowBuilder.endGroup();
+        try windowBuilder2.addMenuItem(toggleSlider);
+    try windowBuilder2.endGroup();
 
     // Utility Elements Group
     try windowBuilder2.startGroup("Utility Elements");
@@ -200,9 +201,11 @@ pub fn main() !void {
 
     var window = try windowBuilder.build();
     var window2 = try windowBuilder2.build();
+    var window3 = try windowBuilder3.build();
     var rayMenu = rm.RayMenu.init(allocator);
-    try rayMenu.addWindow(&window2);
     try rayMenu.addWindow(&window);
+    try rayMenu.addWindow(&window2);
+    try rayMenu.addWindow(&window3);
     rayMenu.build();
 
     while (!rl.windowShouldClose())

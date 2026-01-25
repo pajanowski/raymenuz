@@ -194,6 +194,10 @@ pub const RayMenu = struct {
     // a map to track the rects of a window that might be convering up
     windowToCollisions: WindowToCollisionType,
     nextWindowId: u32 = 1,
+    nextWindowStart: rl.Vector2 = rl.Vector2{
+        .x = du.WINDOW_STATUS_BAR_HEIGHT,
+        .y = du.WINDOW_STATUS_BAR_HEIGHT
+    },
 
     const Self = @This();
 
@@ -211,6 +215,9 @@ pub const RayMenu = struct {
 
     pub fn addWindow(self: *Self, window: *du.Window) !void {
         window.id = self.nextWindowId;
+        window.position = self.nextWindowStart;
+        self.nextWindowStart.y += du.WINDOW_STATUS_BAR_HEIGHT;
+        self.nextWindowStart.x += du.WINDOW_STATUS_BAR_HEIGHT;
         try self.windowToCollisions.put(window.id, std.array_list.Managed(*rl.Rectangle).init(self.allocator));
         self.nextWindowId += 1;
         try self.windows.append(window);
