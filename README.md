@@ -1,8 +1,8 @@
 # raymenuz
-## A raygui wrapper for quick menus written in zig
 - - -
 ### Main Features:
 - Easy API for creating raygui menus fast
+- Automatic element positioning
 - Multi-window support
 - All raygui basic controls supported
 
