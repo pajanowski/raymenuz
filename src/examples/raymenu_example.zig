@@ -2,9 +2,7 @@ const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
-const raymenuz = @import("raymenuz");
-const rm = raymenuz.raymenu;
-const rmf = raymenuz.raymenu_from_file;
+const rm = @import("raymenuz");
 
 const Player = struct {
     rec: rl.Rectangle,
@@ -131,29 +129,29 @@ pub fn main() !void {
     // Sliders & Progress Group
     try windowBuilder2.startGroup("Sliders & Progress");
         // Slider
-        const speedSlider = rm.Slider.init("Speed X", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.x);
+        const speedSlider = rm.Slider.init("Speed X", rm.menuUtils.Range{.lower = 0, .upper = 50}, &player.speed.x);
         try windowBuilder2.addMenuItem(speedSlider);
 
-        const speedSlider2 = rm.Slider.init("Speed Y", raymenuz.mu.Range{.lower = 0, .upper = 50}, &player.speed.y);
+        const speedSlider2 = rm.Slider.init("Speed Y", rm.menuUtils.Range{.lower = 0, .upper = 50}, &player.speed.y);
         try windowBuilder2.addMenuItem(speedSlider2);
 
         // SliderBar
-        const healthSlider = rm.SliderBar.init("Health", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
+        const healthSlider = rm.SliderBar.init("Health", rm.menuUtils.Range{.lower = 0, .upper = 100}, &player.health);
         try windowBuilder2.addMenuItem(healthSlider);
 
         // ProgressBar
-        const healthProgress = rm.ProgressBar.init("HP Bar", raymenuz.mu.Range{.lower = 0, .upper = 100}, &player.health);
+        const healthProgress = rm.ProgressBar.init("HP Bar", rm.menuUtils.Range{.lower = 0, .upper = 100}, &player.health);
         try windowBuilder2.addMenuItem(healthProgress);
     try windowBuilder2.endGroup();
 
     // Value Inputs Group
     try windowBuilder3.startGroup("Value Inputs");
         // ValueBox (editable integer)
-        const scoreValue = rm.ValueBox.init("Score", raymenuz.mu.Range{.lower = 0, .upper = 9999}, &player.score);
+        const scoreValue = rm.ValueBox.init("Score", rm.menuUtils.Range{.lower = 0, .upper = 9999}, &player.score);
         try windowBuilder3.addMenuItem(scoreValue);
 
         // Spinner
-        const levelSpinner = rm.Spinner.init("Level", raymenuz.mu.Range{.lower = 1, .upper = 99}, &player.level, &player.spinnerEdit);
+        const levelSpinner = rm.Spinner.init("Level", rm.menuUtils.Range{.lower = 1, .upper = 99}, &player.level, &player.spinnerEdit);
         try windowBuilder3.addMenuItem(levelSpinner);
 
         // TextBox

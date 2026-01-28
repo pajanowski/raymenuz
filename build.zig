@@ -10,29 +10,15 @@ pub fn build(b: *std.Build) void {
     const raylib = raylib_dep.module("raylib"); // main raylib module
     const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
-    const ymlz = b.dependency("ymlz", .{});
 
     const mod = b.addModule("raymenuz", .{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/raymenu.zig"),
         .target = target,
         .optimize = optimize,  // Add this line
     });
 
     mod.addImport("raylib", raylib);
     mod.addImport("raygui", raygui);
-    mod.addImport("ymlz", ymlz.module("root"));
-
-    const raymenu_from_file_example_exe = b.addExecutable(.{
-        .name = "raymenu from file example",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/examples/raymenu_from_file_example.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "raymenuz", .module = mod },
-            },
-        }),
-    });
 
     const raymenu_example_exe = b.addExecutable(.{
         .name = "raymenu example",
@@ -46,32 +32,20 @@ pub fn build(b: *std.Build) void {
         })
     });
 
-    raymenu_from_file_example_exe.linkLibrary(raylib_artifact);
-    raymenu_from_file_example_exe.root_module.addImport("raylib", raylib);
-    raymenu_from_file_example_exe.root_module.addImport("raygui", raygui);
-
-    b.installArtifact(raymenu_from_file_example_exe);
-
     raymenu_example_exe.linkLibrary(raylib_artifact);
     raymenu_example_exe.root_module.addImport("raylib", raylib);
     raymenu_example_exe.root_module.addImport("raygui", raygui);
 
     b.installArtifact(raymenu_example_exe);
 
-    const run_from_file_example_step = b.step("run_from_file_example", "Run the Raymenu From File example");
     const run_example_step = b.step("run_example", "Run the Raymenu example");
-
-    const run_from_file_example_cmd = b.addRunArtifact(raymenu_from_file_example_exe);
     const run_example_cmd = b.addRunArtifact(raymenu_example_exe);
 
-    run_from_file_example_step.dependOn(&run_from_file_example_cmd.step);
     run_example_step.dependOn(&run_example_cmd.step);
 
-    run_from_file_example_cmd.step.dependOn(b.getInstallStep());
     run_example_cmd.step.dependOn(b.getInstallStep());
 
     if (b.args) |args| {
-        run_from_file_example_cmd.addArgs(args);
         run_example_cmd.addArgs(args);
     }
 
@@ -82,7 +56,7 @@ pub fn build(b: *std.Build) void {
     const run_mod_tests = b.addRunArtifact(mod_tests);
 
     const exe_tests = b.addTest(.{
-        .root_module = raymenu_from_file_example_exe.root_module,
+        .root_module = raymenu_example_exe.root_module
     });
 
     const run_exe_tests = b.addRunArtifact(exe_tests);

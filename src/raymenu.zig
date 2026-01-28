@@ -5,7 +5,10 @@ const rl = @import("raylib");
 const rg = @import("raygui");
 
 const MenuItem = du.MenuItem;
+const GroupBox = du.GroupBox;
 
+pub const menuUtils = mu;
+pub const drawUtils = du;
 pub const Slider = du.Slider;
 pub const ValueBox = du.ValueBox;
 pub const Label = du.Label;
@@ -26,8 +29,6 @@ pub const ToggleSlider = du.ToggleSlider;
 pub const DummyRec = du.DummyRec;
 pub const Grid = du.Grid;
 pub const DrawSettings = mu.DrawSettings;
-
-const GroupBox = du.GroupBox;
 
 const X_INDENT = 5;
 pub const RayMenuWindowBuilder = struct {
@@ -265,7 +266,7 @@ pub const RayMenu = struct {
         var focusedWindowIndex: usize = self.windows.items.len - 1;
         for (self.windows.items, 0..) |window, index| {
             window.enabled = false;
-            if (rl.checkCollisionPointRec(mousePos, sizeAndPosToRect(window.size, window.position))) {
+            if (rl.isMouseButtonReleased(rl.MouseButton.left) and rl.checkCollisionPointRec(mousePos, sizeAndPosToRect(window.size, window.position))) {
                 const coveredParts = self.windowToCollisions.getPtr(window.id).?;
                 var isFocused = true;
                 for (coveredParts.items) |covered| {
